@@ -1669,7 +1669,7 @@ body {
 .copyright {
     text-align: center;
     margin-top: 20px;
-    padding-top: 12px;
+    padding: 18px 0 0 0;
     border-top: 1px solid var(--border-color);
     font-size: 10px;
     color: var(--accent-color);
