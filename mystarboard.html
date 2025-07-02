@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⭐ My Starboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Notepad Section (Left Half) -->
+            <div class="notepad-section">
+                <div class="notepad-header">
+                    <div class="notepad-title-section">
+                        <h2>Notes</h2>
+                        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                            <span class="theme-icon">🌙</span>
+                        </button>
+                    </div>
+                    <div class="notepad-controls">
+                        <select id="fontFamily" class="font-selector">
+                            <option value="sans">Sans</option>
+                            <option value="serif">Serif</option>
+                            <option value="mono">Mono</option>
+                        </select>
+                        <div class="font-size-controls">
+                            <button class="format-btn font-size-btn" id="titleSizeBtn" title="Title Size">T₁</button>
+                            <button class="format-btn font-size-btn" id="subtitleSizeBtn" title="Subtitle Size">T₂</button>
+                            <button class="format-btn font-size-btn" id="normalSizeBtn" title="Normal Size">T₃</button>
+                        </div>
+                        <button class="format-btn" data-command="bold" title="Bold">B</button>
+                        <button class="format-btn" data-command="italic" title="Italic">I</button>
+                        <button class="format-btn" data-command="strikethrough" title="Strikethrough">S</button>
+                        <button class="format-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
+                        <button class="format-btn" data-command="insertOrderedList" title="Numbered List">1.</button>
+                        <button class="format-btn" id="linkBtn" title="Insert Link">🔗</button>
+                    </div>
+                </div>
+                <div class="notepad-editor" id="notepadEditor" contenteditable="true" placeholder="Start typing your notes..."></div>
+                
+                <!-- Copyright Notice -->
+                <div class="copyright">
+                    My Starboard created with ♥ by Haolin Fang © 2025
+                </div>
+            </div>
+
+            <!-- Right Half -->
+            <div class="right-section">
+                <!-- To-Do List (Top of right section) -->
+                <div class="todo-section">
+                    <div class="todo-reminders-container">
+                        <!-- To-Do List (Left half) -->
+                        <div class="todo-list-section">
+                            <div class="todo-header">
+                                <h3>To-Do List</h3>
+                                <button class="add-todo-btn" id="addTodoBtn">+</button>
+                            </div>
+                            <div class="todo-input-container" id="todoInputContainer" style="display: none;">
+                                <input type="text" id="todoInput" placeholder="Enter a task..." maxlength="100">
+                                <div class="todo-tag-section">
+                                    <input type="text" id="todoTagInput" placeholder="Add tag..." maxlength="15">
+                                    <div class="tag-color-options">
+                                        <div class="tag-color-option" data-color="#7a9471" style="background: #7a9471;" title="Green"></div>
+                                        <div class="tag-color-option" data-color="#8b7aa8" style="background: #8b7aa8;" title="Purple"></div>
+                                        <div class="tag-color-option" data-color="#a87a7a" style="background: #a87a7a;" title="Red"></div>
+                                        <div class="tag-color-option" data-color="#a8967a" style="background: #a8967a;" title="Orange"></div>
+                                        <div class="tag-color-option" data-color="#7a9ba8" style="background: #7a9ba8;" title="Blue"></div>
+                                    </div>
+                                </div>
+                                <div class="todo-actions">
+                                    <button id="saveTodoBtn">Save</button>
+                                    <button id="cancelTodoBtn">Cancel</button>
+                                </div>
+                            </div>
+                            <ul class="todo-list" id="todoList"></ul>
+                        </div>
+
+                        <!-- Scheduled Reminders (Right half) -->
+                        <div class="reminders-section">
+                            <div class="reminders-header">
+                                <h3>Reminders</h3>
+                                <div class="reminder-controls">
+                                    <button class="history-toggle-btn" id="historyToggleBtn" title="Show/Hide History">📋</button>
+                                    <button class="add-reminder-btn" id="addReminderBtn">+</button>
+                                </div>
+                            </div>
+                            <div class="reminder-input-container" id="reminderInputContainer" style="display: none;">
+                                <input type="text" id="reminderText" placeholder="Enter reminder..." maxlength="100">
+                                <div class="reminder-datetime">
+                                    <input type="date" id="reminderDate">
+                                    <div class="time-section">
+                                        <input type="time" id="reminderTime">
+                                        <label class="all-day-toggle">
+                                            <input type="checkbox" id="allDayToggle">
+                                            <span>All day</span>
+                                        </label>
+                                    </div>
+                                    <div class="repeat-section">
+                                        <select id="repeatOption" class="repeat-selector">
+                                            <option value="none">No repeat</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                            <option value="yearly">Yearly</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="reminder-actions">
+                                    <button id="saveReminderBtn">Save</button>
+                                    <button id="cancelReminderBtn">Cancel</button>
+                                </div>
+                            </div>
+                            <div class="reminders-list" id="remindersList"></div>
+                            <div class="reminder-history-section" id="reminderHistorySection" style="display: none;">
+                                <div class="history-header">History</div>
+                                <div class="reminder-history-list" id="reminderHistoryList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather & Clock Container (Bottom of right section) -->
+                <div class="weather-clock-container">
+                    <!-- Weather Section (Left half) -->
+                    <div class="weather-section">
+                        <div class="weather-header">
+                            <h3>Weather</h3>
+                            <div class="weather-controls">
+                                <button class="refresh-weather-btn" id="refreshWeatherBtn" title="Refresh Weather">↻</button>
+                                <button class="location-btn" id="locationBtn" title="Change Location">📍</button>
+                            </div>
+                        </div>
+                        <div class="weather-content" id="weatherContent">
+                            <div class="weather-loading">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- World Clock Section (Right half) -->
+                    <div class="clock-section">
+                        <div class="clock-header">
+                            <h3>World Clock</h3>
+                            <button class="clock-settings-btn" id="clockSettingsBtn" title="Clock Settings">⚙️</button>
+                        </div>
+                        <div class="clock-content" id="clockContent">
+                            <div class="clock-item current-location">
+                                <div class="clock-location non-interactive" data-timezone="local">Current Location</div>
+                                <div class="clock-time" id="localTime">--:--</div>
+                            </div>
+                            <div class="additional-locations" id="additionalLocations">
+                                <!-- Additional locations will be rendered here -->
+                            </div>
+                            <button class="add-location-btn" id="addLocationBtn" title="Add Time Zone">+ Add Time Zone</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
