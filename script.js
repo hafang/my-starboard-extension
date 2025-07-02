@@ -63,6 +63,7 @@ class TabNow {
     }
     
     init() {
+        this.setupTitle();
         this.setupTheme();
         this.setupNotepad();
         this.setupTodoList();
@@ -73,6 +74,14 @@ class TabNow {
         
         // Cleanup old reminders on startup
         this.cleanupOldReminders();
+    }
+    
+    setupTitle() {
+        // Check if we're in Firefox and add star emoji if needed
+        const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+        if (isFirefox && !document.title.includes('⭐')) {
+            document.title = '⭐ ' + document.title;
+        }
     }
     
     // Theme Management
@@ -96,7 +105,7 @@ class TabNow {
     setTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         const themeIcon = this.themeToggle.querySelector('.theme-icon');
-        themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+        themeIcon.src = theme === 'dark' ? 'icons/light-512.png' : 'icons/dark-512.png';
         localStorage.setItem('tabNowTheme', theme);
         this.saveDataImmediately();
     }
@@ -116,10 +125,7 @@ class TabNow {
         
         // Font family selector
         this.fontSelector.addEventListener('change', () => {
-            const fontClass = `font-${this.fontSelector.value}`;
-            this.notepadEditor.className = `notepad-editor ${fontClass}`;
-            localStorage.setItem('tabNowFont', this.fontSelector.value);
-            this.saveDataImmediately();
+            this.applyFontFamily(this.fontSelector.value);
         });
         
 
@@ -150,10 +156,12 @@ class TabNow {
         // Update format buttons on selection change
         this.notepadEditor.addEventListener('mouseup', () => {
             this.updateFormatButtons();
+            this.updateFontSelector();
         });
         
         this.notepadEditor.addEventListener('keyup', () => {
             this.updateFormatButtons();
+            this.updateFontSelector();
         });
         
         // Handle keyboard shortcuts
@@ -310,6 +318,81 @@ class TabNow {
         this.saveDataImmediately();
     }
     
+    applyFontFamily(fontFamily) {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return;
+        
+        const range = selection.getRangeAt(0);
+        if (range.collapsed) {
+            // If no text is selected, apply to current word or create a marker for future typing
+            const parentElement = range.startContainer.nodeType === Node.TEXT_NODE 
+                ? range.startContainer.parentElement 
+                : range.startContainer;
+            
+            // Check if we're already inside a font span
+            let fontElement = parentElement;
+            while (fontElement && fontElement !== this.notepadEditor) {
+                if (fontElement.classList && (fontElement.classList.contains('font-sans') || 
+                    fontElement.classList.contains('font-serif') || 
+                    fontElement.classList.contains('font-mono'))) {
+                    // Replace existing font class
+                    fontElement.className = fontElement.className.replace(/font-(sans|serif|mono)/g, '').trim();
+                    fontElement.classList.add(`font-${fontFamily}`);
+                    this.saveNotepadContent();
+                    return;
+                }
+                fontElement = fontElement.parentElement;
+            }
+        } else {
+            // Apply to selected text
+            const span = document.createElement('span');
+            span.className = `font-${fontFamily}`;
+            
+            try {
+                range.surroundContents(span);
+            } catch (e) {
+                // If surrounding fails, insert the content with formatting
+                const contents = range.extractContents();
+                span.appendChild(contents);
+                range.insertNode(span);
+            }
+            
+            // Clear selection
+            selection.removeAllRanges();
+        }
+        
+        this.saveNotepadContent();
+    }
+    
+    updateFontSelector() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            let element = range.startContainer.nodeType === Node.TEXT_NODE 
+                ? range.startContainer.parentElement 
+                : range.startContainer;
+            
+            // Check for font family classes in the current element or its parents
+            while (element && element !== this.notepadEditor) {
+                if (element.classList) {
+                    if (element.classList.contains('font-sans')) {
+                        this.fontSelector.value = 'sans';
+                        return;
+                    } else if (element.classList.contains('font-serif')) {
+                        this.fontSelector.value = 'serif';
+                        return;
+                    } else if (element.classList.contains('font-mono')) {
+                        this.fontSelector.value = 'mono';
+                        return;
+                    }
+                }
+                element = element.parentElement;
+            }
+        }
+        
+        // Default to sans if no specific font is found
+        this.fontSelector.value = 'sans';
+    }
 
     
     // To-Do List Functionality
@@ -1869,13 +1952,7 @@ class TabNow {
             this.notepadEditor.innerHTML = savedNotes;
         }
         
-        // Load font preference
-        const savedFont = localStorage.getItem('tabNowFont');
-        if (savedFont) {
-            this.fontSelector.value = savedFont;
-            const fontClass = `font-${savedFont}`;
-            this.notepadEditor.className = `notepad-editor ${fontClass}`;
-        }
+        // Note: Font preferences are now applied per text selection, not globally
         
 
         
