@@ -32,9 +32,7 @@ class TabNow {
         this.saveReminderBtn = document.getElementById('saveReminderBtn');
         this.cancelReminderBtn = document.getElementById('cancelReminderBtn');
         this.remindersList = document.getElementById('remindersList');
-        this.historyToggleBtn = document.getElementById('historyToggleBtn');
-        this.reminderHistorySection = document.getElementById('reminderHistorySection');
-        this.reminderHistoryList = document.getElementById('reminderHistoryList');
+
         
         // Weather elements
         this.weatherContent = document.getElementById('weatherContent');
@@ -51,7 +49,7 @@ class TabNow {
         this.reminders = [];
         this.editingReminderId = null; // Track which reminder is being edited
         this.editingTodoId = null; // Track which todo is being edited
-        this.showHistory = false; // Track if reminder history is shown
+
         this.selectedTagColor = '#7a9471'; // Default tag color
         this.draggedElement = null; // Track dragged todo item
         this.weatherData = null;
@@ -482,6 +480,15 @@ class TabNow {
     renderTodos() {
         this.todoList.innerHTML = '';
         
+        // Show hint text when no todos exist
+        if (this.todos.length === 0) {
+            const emptyHint = document.createElement('div');
+            emptyHint.className = 'todo-empty-hint';
+            emptyHint.textContent = 'Ready when you are!';
+            this.todoList.appendChild(emptyHint);
+            return;
+        }
+        
         this.todos.forEach((todo, index) => {
             const todoItem = document.createElement('li');
             todoItem.className = 'todo-item';
@@ -639,9 +646,7 @@ class TabNow {
             this.hideReminderInput();
         });
         
-        this.historyToggleBtn.addEventListener('click', () => {
-            this.toggleReminderHistory();
-        });
+
 
         this.allDayToggle.addEventListener('change', () => {
             this.reminderTime.disabled = this.allDayToggle.checked;
@@ -825,6 +830,9 @@ class TabNow {
     }
 
     renderReminders() {
+        // Clean up expired reminders first
+        this.cleanupOldReminders();
+        
         const now = new Date();
         const today = now.toISOString().split('T')[0];
         const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
@@ -899,14 +907,9 @@ class TabNow {
         }
         
         this.remindersList.innerHTML = html;
-        
-        // Update history if it's currently shown
-        if (this.showHistory) {
-            this.renderReminderHistory();
-        }
     }
 
-    renderReminderItem(reminder, isToday, isHistory = false) {
+    renderReminderItem(reminder, isToday) {
         const date = new Date(reminder.date);
         const dateStr = this.formatReminderDate(date, isToday);
         const timeStr = reminder.isAllDay ? 'All day' : this.formatTime(reminder.time);
@@ -915,13 +918,10 @@ class TabNow {
         // Use original ID for recurring reminders, regular ID for others
         const reminderId = reminder.isRecurring ? reminder.originalId : reminder.id;
         
-        // For historical reminders, disable edit but allow delete
-        const editButton = isHistory ? '' : `<button class="reminder-edit" data-reminder-id="${reminderId}" title="Edit reminder">✏️</button>`;
-        
         return `
-            <div class="reminder-item ${isToday ? 'today' : ''} ${reminder.isRecurring ? 'recurring' : ''} ${isHistory ? 'historical' : ''}" data-reminder-id="${reminderId}">
+            <div class="reminder-item ${isToday ? 'today' : ''} ${reminder.isRecurring ? 'recurring' : ''}" data-reminder-id="${reminderId}">
                 <div class="reminder-actions-bar">
-                    ${editButton}
+                    <button class="reminder-edit" data-reminder-id="${reminderId}" title="Edit reminder">✏️</button>
                     <button class="reminder-delete" data-reminder-id="${reminderId}" title="Delete reminder">×</button>
                 </div>
                 <div class="reminder-text">${this.escapeHtml(reminder.text)}</div>
@@ -983,101 +983,40 @@ class TabNow {
         this.saveDataImmediately();
     }
 
-    toggleReminderHistory() {
-        this.showHistory = !this.showHistory;
-        this.historyToggleBtn.classList.toggle('active', this.showHistory);
-        
-        if (this.showHistory) {
-            this.reminderHistorySection.style.display = 'block';
-            this.renderReminderHistory();
-        } else {
-            this.reminderHistorySection.style.display = 'none';
-        }
-        
-        // Save preference
-        localStorage.setItem('tabNowShowHistory', JSON.stringify(this.showHistory));
-        this.saveDataImmediately();
-    }
 
-    renderReminderHistory() {
-        const now = new Date();
-        const historicalReminders = this.getHistoricalReminders(now);
-        
-        if (historicalReminders.length === 0) {
-            this.reminderHistoryList.innerHTML = '<div class="no-reminders">No reminder history</div>';
-            return;
-        }
-        
-        let html = '';
-        historicalReminders.forEach(reminder => {
-            html += this.renderReminderItem(reminder, false, true); // isHistory = true
-        });
-        
-        this.reminderHistoryList.innerHTML = html;
-    }
-
-    getHistoricalReminders(now) {
-        const today = now.toISOString().split('T')[0];
-        const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
-        
-        // Get non-repeating reminders that have passed
-        const historicalReminders = this.reminders.filter(reminder => {
-            if (reminder.repeat && reminder.repeat !== 'none') return false; // Skip recurring reminders
-            
-            const reminderDate = reminder.date;
-            
-            // Past date
-            if (reminderDate < today) return true;
-            
-            // Today but time has passed by more than 5 minutes (if not all-day)
-            if (reminderDate === today && !reminder.isAllDay && reminder.time) {
-                const [hours, minutes] = reminder.time.split(':').map(Number);
-                const reminderTime = hours * 60 + minutes;
-                // Only move to history if it's been more than 5 minutes past the reminder time
-                return reminderTime < (currentTime - 5);
-            }
-            
-            return false;
-        });
-        
-        // Sort by date/time (most recent first)
-        return historicalReminders.sort((a, b) => {
-            const dateA = new Date(a.date + (a.time ? `T${a.time}` : 'T00:00'));
-            const dateB = new Date(b.date + (b.time ? `T${b.time}` : 'T00:00'));
-            return dateB - dateA; // Reverse order (newest first)
-        });
-    }
 
     cleanupOldReminders() {
         const now = new Date();
-        const cutoffTime = new Date(now.getTime() - (48 * 60 * 60 * 1000)); // 48 hours ago
-        const cutoffDate = cutoffTime.toISOString().split('T')[0];
+        const today = now.toISOString().split('T')[0];
+        const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
         
         const originalCount = this.reminders.length;
         
         this.reminders = this.reminders.filter(reminder => {
-            // Keep recurring reminders
+            // Keep recurring reminders - they regenerate automatically
             if (reminder.repeat && reminder.repeat !== 'none') return true;
             
             const reminderDate = reminder.date;
             
-            // Keep if not old enough
-            if (reminderDate > cutoffDate) return true;
+            // Remove past dates
+            if (reminderDate < today) return false;
             
-            // For same date, check time
-            if (reminderDate === cutoffDate && reminder.time) {
-                const reminderDateTime = new Date(reminderDate + 'T' + reminder.time);
-                return reminderDateTime > cutoffTime;
+            // For today, check if time has passed
+            if (reminderDate === today && !reminder.isAllDay && reminder.time) {
+                const [hours, minutes] = reminder.time.split(':').map(Number);
+                const reminderTime = hours * 60 + minutes;
+                // Remove if the reminder time has passed
+                return reminderTime > currentTime;
             }
             
-            // If it's older than cutoff date or same date without time, remove it
-            return false;
+            // For today's all-day reminders or future reminders, keep them
+            return reminderDate >= today;
         });
         
         // Save if we removed any reminders
         if (this.reminders.length < originalCount) {
             this.saveReminders();
-            console.log(`Cleaned up ${originalCount - this.reminders.length} old reminders`);
+            console.log(`Cleaned up ${originalCount - this.reminders.length} expired reminders`);
         }
     }
 
@@ -1979,12 +1918,12 @@ class TabNow {
         if (savedTodos) {
             try {
                 this.todos = JSON.parse(savedTodos);
-                this.renderTodos();
             } catch (e) {
                 // Failed to parse saved todos
                 this.todos = [];
             }
         }
+        this.renderTodos(); // Always render todos (shows empty state hint when no todos)
         
         // Load reminders
         const savedReminders = localStorage.getItem('tabNowReminders');
@@ -1998,20 +1937,7 @@ class TabNow {
         }
         this.renderReminders(); // Always render reminders (shows "no reminders" message when empty)
 
-        // Load history preference
-        try {
-            const savedHistoryPref = localStorage.getItem('tabNowShowHistory');
-            if (savedHistoryPref) {
-                this.showHistory = JSON.parse(savedHistoryPref);
-                this.historyToggleBtn.classList.toggle('active', this.showHistory);
-                if (this.showHistory) {
-                    this.reminderHistorySection.style.display = 'block';
-                    this.renderReminderHistory();
-                }
-            }
-        } catch (error) {
-            this.showHistory = false;
-        }
+
     }
     
     // Immediate save function for important data changes
@@ -2030,8 +1956,7 @@ class TabNow {
             'tabNowLocation',
             'tabNowWeatherCache',
             'tabNowLocalLocationName',
-            'tabNowAdditionalClockLocations',
-            'tabNowShowHistory'
+            'tabNowAdditionalClockLocations'
         ];
             
             keysToSync.forEach(key => {
@@ -2089,8 +2014,7 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
             'tabNowLocation',
             'tabNowWeatherCache',
             'tabNowLocalLocationName',
-            'tabNowAdditionalClockLocations',
-            'tabNowShowHistory'
+            'tabNowAdditionalClockLocations'
         ];
         
         keysToSync.forEach(key => {
@@ -2117,8 +2041,7 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
             'tabNowLocation',
             'tabNowWeatherCache',
             'tabNowLocalLocationName',
-            'tabNowAdditionalClockLocations',
-            'tabNowShowHistory'
+            'tabNowAdditionalClockLocations'
         ];
         
         keysToSync.forEach(key => {

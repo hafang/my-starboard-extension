@@ -406,53 +406,7 @@ body {
     align-items: center;
 }
 
-.history-toggle-btn {
-    background: var(--button-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--button-text);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
-}
 
-.history-toggle-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.history-toggle-btn:hover {
-    background: var(--hover-color);
-    border-color: var(--accent-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px) scale(1.05);
-}
-
-.history-toggle-btn:hover::before {
-    opacity: 1;
-}
-
-.history-toggle-btn.active {
-    background: linear-gradient(135deg, #7a9471 0%, #6b8563 100%);
-    color: white;
-    border-color: #7a9471;
-    box-shadow: 0 2px 8px rgba(122, 148, 113, 0.4);
-}
 
 .add-reminder-btn {
     background: var(--green-gradient);
@@ -769,50 +723,19 @@ body {
     color: var(--accent-color);
     font-size: 15px;
     padding: 24px;
+    margin-top: 8px;
     opacity: 0.7;
     line-height: 1.4;
 }
 
-/* Reminder History Section */
-.reminder-history-section {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid var(--border-color);
-    animation: slideDown 0.3s ease;
-}
-
-.history-header {
-    font-size: 14px;
-    font-weight: 600;
+.todo-empty-hint {
+    text-align: center;
     color: var(--accent-color);
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.8;
-}
-
-.reminder-history-list {
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.reminder-history-list .reminder-item {
-    opacity: 0.8;
-    background: var(--secondary-bg);
-    border: 1px solid var(--border-color);
-}
-
-.reminder-history-list .reminder-item:hover {
-    opacity: 1;
-}
-
-.reminder-history-list .reminder-item .reminder-text {
-    opacity: 0.8;
-}
-
-.reminder-item.historical {
-    border-left: 3px solid var(--accent-color);
-    opacity: 0.9;
+    font-size: 15px;
+    padding: 24px;
+    margin-top: 8px;
+    opacity: 0.7;
+    line-height: 1.4;
 }
 
 @keyframes slideDown {
@@ -1868,11 +1791,7 @@ body {
         font-size: 14px;
     }
 
-    .history-toggle-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
-    }
+
 
     .todo-drag-handle {
         font-size: 14px;
