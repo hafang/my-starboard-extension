@@ -24,33 +24,32 @@ A minimalistic Firefox and Chrome compatible extension that transforms your new 
 - Automatic refresh capability
 - Clean, minimalistic display
 
-### 🎨 Adaptive Theming
-- **Auto theme detection** based on local time
-- **Manual theme toggle** (light/dark modes)
-- **Minimalistic design** with black/white color scheme
-- **Translucent elements** with backdrop blur effects
 
 ## Installation
 
 ### Chrome Installation
 
 1. **Download the extension files** to a local folder
-2. **Convert the SVG icon** to PNG files:
-   - Create `icon-16.png`, `icon-32.png`, `icon-48.png`, and `icon-128.png` from the provided `icons/icon.svg`
-   - You can use online SVG to PNG converters or image editing software
-3. **Open Chrome** and navigate to `chrome://extensions/`
-4. **Enable Developer mode** (toggle in the top right)
-5. **Click "Load unpacked"** and select the folder containing the extension files
-6. **Open a new tab** to see your dashboard
+2. **Open Chrome** and navigate to `chrome://extensions/`
+3. **Enable Developer mode** (toggle in the top right)
+4. **Click "Load unpacked"** and select the folder containing the extension files
+5. **Open a new tab** to see your dashboard
 
 ### Firefox Installation
 
 1. **Download the extension files** to a local folder
-2. **Convert the SVG icon** to PNG files (same as Chrome instructions)
-3. **Open Firefox** and navigate to `about:debugging#/runtime/this-firefox`
-4. **Click "Load Temporary Add-on"**
-5. **Select the `manifest.json` file** from your extension folder
-6. **Open a new tab** to see your dashboard
+2. **Open Firefox** and navigate to `about:debugging#/runtime/this-firefox`
+3. **Click "Load Temporary Add-on"**
+4. **Select the `manifest.json` file** from your extension folder
+5. **Open a new tab** to see your dashboard
+
+### What's Included
+
+The extension comes ready to install with:
+- ✅ **All icon files** (16px, 32px, 48px, 128px, 512px) pre-generated
+- ✅ **Manifest v3** compatibility for modern browsers
+- ✅ **Cross-browser support** (Chrome, Firefox, Edge)
+- ✅ **No additional setup required** - works immediately after installation
 
 
 ## Usage Guide
@@ -106,9 +105,10 @@ For Chrome users, data also syncs across devices when signed into Chrome.
 ## Technical Details
 
 ### Browser Compatibility
-- **Chrome**: Version 88+
-- **Firefox**: Version 109+
-- **Edge**: Chromium-based versions
+- **Chrome**: Version 88+ (Manifest v3 support)
+- **Firefox**: Version 109+ (Manifest v3 support)
+- **Edge**: Version 88+ (Chromium-based with Manifest v3 support)
+- **Other Chromium browsers**: Any version with Manifest v3 support
 
 ### Permissions Required
 - **Storage**: For saving notes and preferences
@@ -117,17 +117,19 @@ For Chrome users, data also syncs across devices when signed into Chrome.
 ### File Structure
 ```
 my-starboard-extension/
-├── manifest.json       # Extension configuration
-├── mystarboard.html        # Main dashboard HTML
-├── styles.css         # Styling and themes
-├── script.js          # Application logic
-├── icons/             # Extension icons
-│   ├── icon.svg       # SVG template
-│   ├── icon-16.png    # 16x16 icon
-│   ├── icon-32.png    # 32x32 icon
-│   ├── icon-48.png    # 48x48 icon
-│   └── icon-128.png   # 128x128 icon
-└── README.md          # This file
+├── manifest.json       # Extension configuration (Manifest v3)
+├── mystarboard.html    # Main dashboard HTML
+├── styles.css          # Styling and themes
+├── script.js           # Application logic
+├── icons/              # Extension icons (all sizes included)
+│   ├── icon.svg        # Original SVG source
+│   ├── icon-16.png     # 16x16 icon
+│   ├── icon-32.png     # 32x32 icon
+│   ├── icon-48.png     # 48x48 icon
+│   ├── icon-128.png    # 128x128 icon
+│   └── icon-512.png    # 512x512 icon
+├── LICENSE             # MIT License
+└── README.md           # This documentation
 ```
 
 ## Weather API Setup (Optional)
