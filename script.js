@@ -1022,19 +1022,26 @@ class TabNow {
             return 'Today';
         }
         
+        // Create dates without time components for accurate day comparison
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const reminderDate = new Date(date);
+        reminderDate.setHours(0, 0, 0, 0);
+        
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         
-        if (date.toDateString() === tomorrow.toDateString()) {
+        // Calculate difference in days
+        const diffTime = reminderDate.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
             return 'Tomorrow';
         }
         
-        const diffTime = date - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
         if (diffDays <= 7) {
-            return date.toLocaleDateString('en-US', { weekday: 'short' });
+            return date.toLocaleDateString('en-US', { weekday: 'long' });
         }
         
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
