@@ -1023,18 +1023,21 @@ class TabNow {
             return 'Today';
         }
         
-        // Create dates without time components for accurate day comparison
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Get today's date in YYYY-MM-DD format
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
         
-        const reminderDate = new Date(date);
-        reminderDate.setHours(0, 0, 0, 0);
+        // Get reminder date in YYYY-MM-DD format
+        const reminderDateStr = new Date(date).toISOString().split('T')[0];
         
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Calculate the difference in days using the date strings
+        const todayParts = today.split('-').map(Number);
+        const reminderParts = reminderDateStr.split('-').map(Number);
         
-        // Calculate difference in days
-        const diffTime = reminderDate.getTime() - today.getTime();
+        const todayDate = new Date(todayParts[0], todayParts[1] - 1, todayParts[2]);
+        const reminderDate = new Date(reminderParts[0], reminderParts[1] - 1, reminderParts[2]);
+        
+        const diffTime = reminderDate.getTime() - todayDate.getTime();
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
         
         if (diffDays === 1) {
@@ -1042,10 +1045,10 @@ class TabNow {
         }
         
         if (diffDays <= 7) {
-            return date.toLocaleDateString('en-US', { weekday: 'long' });
+            return reminderDate.toLocaleDateString('en-US', { weekday: 'long' });
         }
         
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return reminderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
     formatTime(timeString) {
