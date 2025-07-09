@@ -917,7 +917,8 @@ class TabNow {
         this.cleanupOldReminders();
         
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
+        // Format date in local timezone
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
         const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
         
         // Get non-repeating reminders and recurring instances
@@ -1077,7 +1078,8 @@ class TabNow {
 
     cleanupOldReminders() {
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
+        // Format date in local timezone
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
         const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
         
         const originalCount = this.reminders.length;
