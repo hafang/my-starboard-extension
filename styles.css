@@ -11,6 +11,8 @@
     --button-text: #6b7280;
     --accent-color: #9ca3af;
     --accent-color-rgb: 156, 163, 175;
+    --link-color: #4a9eff;
+    --link-hover-color: #2684ff;
     
     /* Common gradients */
     --glass-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
@@ -33,6 +35,8 @@
     --button-text: #c9c9c9;
     --accent-color: #a8a8a8;
     --accent-color-rgb: 168, 168, 168;
+    --link-color: #66b2ff;
+    --link-hover-color: #99ccff;
 }
 
 /* Global Styles */
@@ -1849,4 +1853,16 @@ body {
         font-size: 9px;
         opacity: 0.4;
     }
+} 
+
+/* Link Styles */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
 } 

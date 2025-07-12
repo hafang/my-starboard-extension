@@ -164,6 +164,14 @@ class TabNow {
             this.updateFontSelector();
         });
         
+        // Handle link clicks
+        this.notepadEditor.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                e.preventDefault();
+                this.handleLinkClick(e.target);
+            }
+        });
+        
         // Handle keyboard shortcuts
         this.notepadEditor.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
@@ -310,6 +318,14 @@ class TabNow {
                     this.execCommand('insertHTML', link);
                 }
             }
+        }
+    }
+    
+    handleLinkClick(linkElement) {
+        const href = linkElement.getAttribute('href');
+        if (href) {
+            // Open link in new tab
+            window.open(href, '_blank');
         }
     }
     
