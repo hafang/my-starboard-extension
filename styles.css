@@ -776,6 +776,12 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
+.todo-controls {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
 .todo-header h3 {
     font-size: 16px;
     font-weight: 500;
@@ -824,6 +830,50 @@ body {
 .add-todo-btn:active {
     transform: translateY(0) scale(1);
     box-shadow: 0 2px 8px rgba(177, 156, 217, 0.4);
+}
+
+.clear-todos-btn {
+    background: linear-gradient(135deg, #f39e9e 0%, #ca7a7a 100%);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(225, 112, 85, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.clear-todos-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.clear-todos-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(225, 112, 85, 0.35);
+}
+
+.clear-todos-btn:hover::before {
+    opacity: 1;
+}
+
+.clear-todos-btn:active {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 2px 8px rgba(225, 112, 85, 0.25);
 }
 
 .todo-input-container {
@@ -1800,6 +1850,11 @@ body {
         width: 28px;
         height: 28px;
         font-size: 14px;
+    }
+    
+    .clear-todos-btn {
+        padding: 4px 8px;
+        font-size: 11px;
     }
 
 

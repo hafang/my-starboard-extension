@@ -14,6 +14,7 @@ class TabNow {
         
         // To-do elements
         this.addTodoBtn = document.getElementById('addTodoBtn');
+        this.clearTodosBtn = document.getElementById('clearTodosBtn');
         this.todoInput = document.getElementById('todoInput');
         this.todoTagInput = document.getElementById('todoTagInput');
         this.todoInputContainer = document.getElementById('todoInputContainer');
@@ -417,6 +418,10 @@ class TabNow {
             this.showTodoInput();
         });
         
+        this.clearTodosBtn.addEventListener('click', () => {
+            this.clearAllTodos();
+        });
+        
         this.saveTodoBtn.addEventListener('click', () => {
             this.saveTodo();
         });
@@ -574,6 +579,19 @@ class TabNow {
         this.todos = this.todos.filter(t => t.id !== id);
         this.renderTodos();
         this.saveTodos();
+    }
+    
+    clearAllTodos() {
+        if (this.todos.length === 0) {
+            return; // Nothing to clear
+        }
+        
+        // Show confirmation dialog
+        if (confirm('Are you sure you want to clear all to-do items? This action cannot be undone.')) {
+            this.todos = [];
+            this.renderTodos();
+            this.saveTodos();
+        }
     }
     
     renderTodos() {

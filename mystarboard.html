@@ -42,7 +42,7 @@
                 
                 <!-- Copyright Notice -->
                 <div class="copyright">
-                    ⭐ My Starboard (v0.1.2) created with ♥ by Haolin Fang © 2025
+                    ⭐ My Starboard (v0.1.2) created with ♥ by Haolin Fang + Claude 4.5 Sonnet © 2025
                 </div>
             </div>
 
@@ -53,10 +53,13 @@
                     <div class="todo-reminders-container">
                         <!-- To-Do List (Left half) -->
                         <div class="todo-list-section">
-                            <div class="todo-header">
-                                <h3>To-Do List</h3>
+                                                    <div class="todo-header">
+                            <h3>To-Do List</h3>
+                            <div class="todo-controls">
+                                <button class="clear-todos-btn" id="clearTodosBtn" title="Clear all todos">Clear All</button>
                                 <button class="add-todo-btn" id="addTodoBtn">+</button>
                             </div>
+                        </div>
                             <div class="todo-input-container" id="todoInputContainer" style="display: none;">
                                 <input type="text" id="todoInput" placeholder="Enter a task..." maxlength="100">
                                 <div class="todo-tag-section">
