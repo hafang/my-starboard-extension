@@ -158,15 +158,23 @@ class TabNow {
         this.notepadEditor.addEventListener('mouseup', () => {
             this.updateFormatButtons();
             this.updateFontSelector();
+            this.updateFontSizeButtons();
         });
         
         this.notepadEditor.addEventListener('keyup', () => {
             this.updateFormatButtons();
             this.updateFontSelector();
+            this.updateFontSizeButtons();
         });
         
-        // Handle link clicks
+        // Handle clicks and link clicks
         this.notepadEditor.addEventListener('click', (e) => {
+            // Update format buttons
+            this.updateFormatButtons();
+            this.updateFontSelector();
+            this.updateFontSizeButtons();
+            
+            // Handle link clicks
             if (e.target.tagName === 'A') {
                 e.preventDefault();
                 this.handleLinkClick(e.target);
@@ -215,9 +223,6 @@ class TabNow {
             
             btn.classList.toggle('active', isActive);
         });
-        
-        // Update font size button states
-        this.updateFontSizeButtons();
     }
     
     applyFontSize(size) {
@@ -239,6 +244,21 @@ class TabNow {
             
             if (blockElement && blockElement !== this.notepadEditor) {
                 this.setElementFontSize(blockElement, size);
+            } else {
+                // No block element found, create a new paragraph with the font size
+                const newParagraph = document.createElement('p');
+                newParagraph.className = `font-size-${size}`;
+                newParagraph.innerHTML = '<br>'; // Add a line break to make it visible
+                
+                // Insert the new paragraph at the cursor position
+                range.insertNode(newParagraph);
+                
+                // Move cursor to the new paragraph
+                const newRange = document.createRange();
+                newRange.setStart(newParagraph, 0);
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
             }
         } else {
             // Apply to selected text
@@ -255,8 +275,7 @@ class TabNow {
             }
         }
         
-        // Clear selection and update buttons
-        selection.removeAllRanges();
+        // Always update button states to reflect the applied size
         this.updateFontSizeButtons();
         this.saveNotepadContent();
     }
@@ -301,6 +320,13 @@ class TabNow {
                 }
                 element = element.parentElement;
             }
+        }
+        
+        // If no font size is found, default to normal
+        if (!this.titleSizeBtn.classList.contains('active') && 
+            !this.subtitleSizeBtn.classList.contains('active') && 
+            !this.normalSizeBtn.classList.contains('active')) {
+            this.normalSizeBtn.classList.add('active');
         }
     }
     
