@@ -20,29 +20,19 @@
                         </button>
                     </div>
                     <div class="notepad-controls">
-                        <select id="fontFamily" class="font-selector">
-                            <option value="sans">Sans</option>
-                            <option value="serif">Serif</option>
-                            <option value="mono">Mono</option>
-                        </select>
-                        <div class="font-size-controls">
-                            <button class="format-btn font-size-btn" id="titleSizeBtn" title="Title Size">T₁</button>
-                            <button class="format-btn font-size-btn" id="subtitleSizeBtn" title="Subtitle Size">T₂</button>
-                            <button class="format-btn font-size-btn" id="normalSizeBtn" title="Normal Size">T₃</button>
-                        </div>
-                        <button class="format-btn" data-command="bold" title="Bold">B</button>
-                        <button class="format-btn" data-command="italic" title="Italic">I</button>
-                        <button class="format-btn" data-command="strikethrough" title="Strikethrough">S</button>
-                        <button class="format-btn" data-command="insertUnorderedList" title="Bullet List">•</button>
-                        <button class="format-btn" data-command="insertOrderedList" title="Numbered List">1.</button>
-                        <button class="format-btn" id="linkBtn" title="Insert Link">🔗</button>
+                        <button class="format-btn" id="boldBtn" title="Bold (Ctrl+B)">B</button>
+                        <button class="format-btn italic-btn" id="italicBtn" title="Italic (Ctrl+I)">I</button>
+                        <button class="format-btn" id="underlineBtn" title="Underline (Ctrl+U)">U</button>
                     </div>
                 </div>
-                <div class="notepad-editor" id="notepadEditor" contenteditable="true" placeholder="Start typing your notes..."></div>
+                <div class="notepad-editor-container">
+                    <div class="notepad-editor" id="notepadEditor" contenteditable="true" placeholder="Start typing your notes..."></div>
+                    <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+                </div>
                 
                 <!-- Copyright Notice -->
                 <div class="copyright">
-                    ⭐ My Starboard (v0.1.2) created with ♥ by Haolin Fang + Claude 4.5 Sonnet © 2025
+                    ⭐ My Starboard (v0.2.0) created with ♥ by Haolin Fang + Claude 4.5 Sonnet © 2025
                 </div>
             </div>
 

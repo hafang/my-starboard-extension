@@ -3,14 +3,19 @@ class TabNow {
     constructor() {
         this.notepadEditor = document.getElementById('notepadEditor');
         this.themeToggle = document.getElementById('themeToggle');
-        this.fontSelector = document.getElementById('fontFamily');
-
-        this.linkButton = document.getElementById('linkBtn');
         
-        // Font size buttons
-        this.titleSizeBtn = document.getElementById('titleSizeBtn');
-        this.subtitleSizeBtn = document.getElementById('subtitleSizeBtn');
-        this.normalSizeBtn = document.getElementById('normalSizeBtn');
+        // Notepad formatting buttons
+        this.boldBtn = document.getElementById('boldBtn');
+        this.italicBtn = document.getElementById('italicBtn');
+        this.underlineBtn = document.getElementById('underlineBtn');
+        this.autocompleteDropdown = document.getElementById('autocompleteDropdown');
+        
+        // Autocomplete state
+        this.autocompleteVisible = false;
+        this.autocompleteIndex = 0;
+        this.autocompleteItems = [];
+        this.currentWord = '';
+        this.currentWordStart = null;
         
         // To-do elements
         this.addTodoBtn = document.getElementById('addTodoBtn');
@@ -111,330 +116,312 @@ class TabNow {
         this.saveDataImmediately();
     }
     
-    // Notepad Functionality
+    // Notepad Functionality - Simple editor with bold, italic, underline, and autocomplete
     setupNotepad() {
-        // Cache format buttons for reuse
-        this.formatButtons = document.querySelectorAll('.format-btn[data-command]');
-        this.formatButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const command = btn.getAttribute('data-command');
-                this.execCommand(command);
-                this.updateFormatButtons();
-            });
+        // Common autocomplete suggestions
+        this.autocompleteSuggestions = [
+            // Common words
+            'the', 'that', 'this', 'there', 'these', 'those', 'through', 'therefore',
+            'because', 'before', 'between', 'being', 'become', 'becoming',
+            'about', 'above', 'after', 'again', 'against', 'already', 'always',
+            'important', 'information', 'interesting', 'implementation',
+            'would', 'could', 'should', 'which', 'where', 'when', 'while', 'with', 'without',
+            'meeting', 'message', 'morning', 'moment',
+            'remember', 'reminder', 'review', 'request', 'response', 'result',
+            'project', 'problem', 'process', 'progress', 'probably',
+            'something', 'someone', 'sometimes', 'schedule', 'suggestion',
+            'however', 'having', 'happened',
+            'different', 'document', 'deadline', 'discussion',
+            'understand', 'unfortunately', 'update', 'urgent',
+            'available', 'actually', 'appreciate', 'attention',
+            'complete', 'completed', 'conference', 'confirm', 'consider',
+            'example', 'experience', 'excellent',
+            'following', 'forward', 'feedback',
+            'necessary', 'nevertheless',
+            'opportunity', 'organization',
+            'please', 'possible', 'presentation',
+            'question', 'quickly',
+            // Days and time
+            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+            'January', 'February', 'March', 'April', 'May', 'June', 
+            'July', 'August', 'September', 'October', 'November', 'December',
+            'tomorrow', 'yesterday', 'today', 'tonight',
+            // Common phrases (as single items)
+            'thank you', 'as soon as possible', 'let me know', 'looking forward',
+        ];
+        
+        // Formatting buttons
+        this.boldBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleFormat('bold');
         });
         
-        // Font family selector
-        this.fontSelector.addEventListener('change', () => {
-            this.applyFontFamily(this.fontSelector.value);
+        this.italicBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleFormat('italic');
         });
         
-
-        
-        // Link button
-        this.linkButton.addEventListener('click', () => {
-            this.insertLink();
+        this.underlineBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleFormat('underline');
         });
         
-        // Font size buttons
-        this.titleSizeBtn.addEventListener('click', () => {
-            this.applyFontSize('title');
-        });
-        
-        this.subtitleSizeBtn.addEventListener('click', () => {
-            this.applyFontSize('subtitle');
-        });
-        
-        this.normalSizeBtn.addEventListener('click', () => {
-            this.applyFontSize('normal');
-        });
-        
-        // Save content on input
+        // Editor input event - save and check autocomplete
         this.notepadEditor.addEventListener('input', () => {
             this.saveNotepadContent();
+            this.checkAutocomplete();
         });
         
-        // Update format buttons on selection change
+        // Update button states on selection change
         this.notepadEditor.addEventListener('mouseup', () => {
-            this.updateFormatButtons();
-            this.updateFontSelector();
-            this.updateFontSizeButtons();
+            this.updateFormatButtonStates();
         });
         
-        this.notepadEditor.addEventListener('keyup', () => {
-            this.updateFormatButtons();
-            this.updateFontSelector();
-            this.updateFontSizeButtons();
-        });
-        
-        // Handle clicks and link clicks
-        this.notepadEditor.addEventListener('click', (e) => {
-            // Update format buttons
-            this.updateFormatButtons();
-            this.updateFontSelector();
-            this.updateFontSizeButtons();
-            
-            // Handle link clicks
-            if (e.target.tagName === 'A') {
-                e.preventDefault();
-                this.handleLinkClick(e.target);
+        this.notepadEditor.addEventListener('keyup', (e) => {
+            // Don't update on autocomplete navigation keys
+            if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(e.key)) {
+                this.updateFormatButtonStates();
             }
         });
         
-        // Handle keyboard shortcuts
+        // Keyboard shortcuts and autocomplete navigation
         this.notepadEditor.addEventListener('keydown', (e) => {
+            // Handle autocomplete navigation
+            if (this.autocompleteVisible) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.navigateAutocomplete(1);
+                    return;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.navigateAutocomplete(-1);
+                    return;
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    if (this.autocompleteItems.length > 0) {
+                        e.preventDefault();
+                        this.selectAutocompleteItem(this.autocompleteIndex);
+                        return;
+                    }
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.hideAutocomplete();
+                    return;
+                }
+            }
+            
+            // Keyboard shortcuts for formatting
             if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
+                switch(e.key.toLowerCase()) {
                     case 'b':
                         e.preventDefault();
-                        this.execCommand('bold');
+                        this.toggleFormat('bold');
                         break;
                     case 'i':
                         e.preventDefault();
-                        this.execCommand('italic');
+                        this.toggleFormat('italic');
                         break;
-                    case 'k':
+                    case 'u':
                         e.preventDefault();
-                        this.insertLink();
+                        this.toggleFormat('underline');
                         break;
                 }
             }
         });
-    }
-    
-    execCommand(command, value = null) {
-        document.execCommand(command, false, value);
-        this.notepadEditor.focus();
-    }
-    
-
-    
-    updateFormatButtons() {
-        this.formatButtons.forEach(btn => {
-            const command = btn.getAttribute('data-command');
-            let isActive = false;
-            
-            try {
-                isActive = document.queryCommandState(command);
-            } catch (e) {
-                // Some commands might not be supported, ignore errors
-                isActive = false;
+        
+        // Hide autocomplete when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.notepadEditor.contains(e.target) && !this.autocompleteDropdown.contains(e.target)) {
+                this.hideAutocomplete();
             }
-            
-            btn.classList.toggle('active', isActive);
+        });
+        
+        // Handle autocomplete item clicks
+        this.autocompleteDropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.autocomplete-item');
+            if (item) {
+                const index = parseInt(item.dataset.index);
+                this.selectAutocompleteItem(index);
+            }
         });
     }
     
-    applyFontSize(size) {
+    toggleFormat(command) {
+        document.execCommand(command, false, null);
+        this.notepadEditor.focus();
+        this.updateFormatButtonStates();
+    }
+    
+    updateFormatButtonStates() {
+        // Check if bold is active
+        try {
+            this.boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+            this.italicBtn.classList.toggle('active', document.queryCommandState('italic'));
+            this.underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
+        } catch (e) {
+            // Commands might not be supported
+        }
+    }
+    
+    // Autocomplete functionality
+    checkAutocomplete() {
         const selection = window.getSelection();
-        if (selection.rangeCount === 0) return;
+        if (!selection.rangeCount) {
+            this.hideAutocomplete();
+            return;
+        }
         
         const range = selection.getRangeAt(0);
-        if (range.collapsed) {
-            // If no text is selected, apply to the current line/paragraph
-            const parentElement = range.startContainer.nodeType === Node.TEXT_NODE 
-                ? range.startContainer.parentElement 
-                : range.startContainer;
-            
-            // Find the closest block element
-            let blockElement = parentElement;
-            while (blockElement && !this.isBlockElement(blockElement)) {
-                blockElement = blockElement.parentElement;
-            }
-            
-            if (blockElement && blockElement !== this.notepadEditor) {
-                this.setElementFontSize(blockElement, size);
-            } else {
-                // No block element found, create a new paragraph with the font size
-                const newParagraph = document.createElement('p');
-                newParagraph.className = `font-size-${size}`;
-                newParagraph.innerHTML = '<br>'; // Add a line break to make it visible
-                
-                // Insert the new paragraph at the cursor position
-                range.insertNode(newParagraph);
-                
-                // Move cursor to the new paragraph
-                const newRange = document.createRange();
-                newRange.setStart(newParagraph, 0);
-                newRange.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(newRange);
-            }
-        } else {
-            // Apply to selected text
-            const span = document.createElement('span');
-            span.className = `font-size-${size}`;
-            
-            try {
-                range.surroundContents(span);
-            } catch (e) {
-                // If surrounding fails, insert the content with formatting
-                const contents = range.extractContents();
-                span.appendChild(contents);
-                range.insertNode(span);
-            }
+        if (!range.collapsed) {
+            this.hideAutocomplete();
+            return;
         }
         
-        // Always update button states to reflect the applied size
-        this.updateFontSizeButtons();
+        // Get the current word being typed
+        const currentWord = this.getCurrentWord();
+        
+        if (!currentWord || currentWord.length < 2) {
+            this.hideAutocomplete();
+            return;
+        }
+        
+        // Find matching suggestions
+        const matches = this.autocompleteSuggestions.filter(suggestion => 
+            suggestion.toLowerCase().startsWith(currentWord.toLowerCase()) && 
+            suggestion.toLowerCase() !== currentWord.toLowerCase()
+        ).slice(0, 6); // Limit to 6 suggestions
+        
+        if (matches.length === 0) {
+            this.hideAutocomplete();
+            return;
+        }
+        
+        this.showAutocomplete(matches);
+    }
+    
+    getCurrentWord() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return '';
+        
+        const range = selection.getRangeAt(0);
+        const textNode = range.startContainer;
+        
+        if (textNode.nodeType !== Node.TEXT_NODE) return '';
+        
+        const text = textNode.textContent;
+        const cursorPos = range.startOffset;
+        
+        // Find word start
+        let wordStart = cursorPos;
+        while (wordStart > 0 && /\w/.test(text[wordStart - 1])) {
+            wordStart--;
+        }
+        
+        this.currentWordStart = wordStart;
+        this.currentWord = text.substring(wordStart, cursorPos);
+        
+        return this.currentWord;
+    }
+    
+    showAutocomplete(items) {
+        this.autocompleteItems = items;
+        this.autocompleteIndex = 0;
+        
+        // Build dropdown HTML
+        const html = items.map((item, index) => {
+            const matchedPart = item.substring(0, this.currentWord.length);
+            const remainingPart = item.substring(this.currentWord.length);
+            return `<div class="autocomplete-item ${index === 0 ? 'selected' : ''}" data-index="${index}">
+                <span class="matched">${this.escapeHtml(matchedPart)}</span><span class="completion">${this.escapeHtml(remainingPart)}</span>
+            </div>`;
+        }).join('');
+        
+        this.autocompleteDropdown.innerHTML = html;
+        
+        // Position the dropdown near the cursor
+        this.positionAutocomplete();
+        
+        this.autocompleteDropdown.style.display = 'block';
+        this.autocompleteVisible = true;
+    }
+    
+    hideAutocomplete() {
+        this.autocompleteDropdown.style.display = 'none';
+        this.autocompleteVisible = false;
+        this.autocompleteItems = [];
+        this.autocompleteIndex = 0;
+    }
+    
+    positionAutocomplete() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const editorRect = this.notepadEditor.getBoundingClientRect();
+        
+        // Position below the cursor, relative to the editor container
+        const container = this.notepadEditor.parentElement;
+        const containerRect = container.getBoundingClientRect();
+        
+        this.autocompleteDropdown.style.left = `${rect.left - containerRect.left}px`;
+        this.autocompleteDropdown.style.top = `${rect.bottom - containerRect.top + 4}px`;
+    }
+    
+    navigateAutocomplete(direction) {
+        const items = this.autocompleteDropdown.querySelectorAll('.autocomplete-item');
+        if (items.length === 0) return;
+        
+        // Remove selection from current item
+        items[this.autocompleteIndex]?.classList.remove('selected');
+        
+        // Update index
+        this.autocompleteIndex += direction;
+        if (this.autocompleteIndex < 0) this.autocompleteIndex = items.length - 1;
+        if (this.autocompleteIndex >= items.length) this.autocompleteIndex = 0;
+        
+        // Add selection to new item
+        items[this.autocompleteIndex]?.classList.add('selected');
+        
+        // Scroll into view if needed
+        items[this.autocompleteIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+    
+    selectAutocompleteItem(index) {
+        const item = this.autocompleteItems[index];
+        if (!item) return;
+        
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        
+        const range = selection.getRangeAt(0);
+        const textNode = range.startContainer;
+        
+        if (textNode.nodeType !== Node.TEXT_NODE) return;
+        
+        const text = textNode.textContent;
+        const cursorPos = range.startOffset;
+        
+        // Replace the current word with the selected suggestion
+        const beforeWord = text.substring(0, this.currentWordStart);
+        const afterWord = text.substring(cursorPos);
+        const newText = beforeWord + item + afterWord;
+        
+        textNode.textContent = newText;
+        
+        // Move cursor to end of inserted word
+        const newCursorPos = this.currentWordStart + item.length;
+        range.setStart(textNode, newCursorPos);
+        range.setEnd(textNode, newCursorPos);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        this.hideAutocomplete();
         this.saveNotepadContent();
-    }
-    
-    setElementFontSize(element, size) {
-        // Remove existing font size classes
-        element.className = element.className.replace(/font-size-\w+/g, '').trim();
-        
-        // Add new font size class
-        element.classList.add(`font-size-${size}`);
-    }
-    
-    isBlockElement(element) {
-        const blockElements = ['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE'];
-        return blockElements.includes(element.tagName);
-    }
-    
-    updateFontSizeButtons() {
-        // Reset all font size buttons
-        this.titleSizeBtn.classList.remove('active');
-        this.subtitleSizeBtn.classList.remove('active');
-        this.normalSizeBtn.classList.remove('active');
-        
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            let element = range.startContainer.nodeType === Node.TEXT_NODE 
-                ? range.startContainer.parentElement 
-                : range.startContainer;
-            
-            // Check for font size classes in the current element or its parents
-            while (element && element !== this.notepadEditor) {
-                if (element.classList.contains('font-size-title')) {
-                    this.titleSizeBtn.classList.add('active');
-                    break;
-                } else if (element.classList.contains('font-size-subtitle')) {
-                    this.subtitleSizeBtn.classList.add('active');
-                    break;
-                } else if (element.classList.contains('font-size-normal')) {
-                    this.normalSizeBtn.classList.add('active');
-                    break;
-                }
-                element = element.parentElement;
-            }
-        }
-        
-        // If no font size is found, default to normal
-        if (!this.titleSizeBtn.classList.contains('active') && 
-            !this.subtitleSizeBtn.classList.contains('active') && 
-            !this.normalSizeBtn.classList.contains('active')) {
-            this.normalSizeBtn.classList.add('active');
-        }
-    }
-    
-    insertLink() {
-        const selection = window.getSelection();
-        const selectedText = selection.toString();
-        const url = prompt('Enter URL:', 'https://');
-        
-        if (url) {
-            if (selectedText) {
-                this.execCommand('createLink', url);
-            } else {
-                const linkText = prompt('Enter link text:', url);
-                if (linkText) {
-                    const link = `<a href="${url}" target="_blank">${linkText}</a>`;
-                    this.execCommand('insertHTML', link);
-                }
-            }
-        }
-    }
-    
-    handleLinkClick(linkElement) {
-        const href = linkElement.getAttribute('href');
-        if (href) {
-            // Open link in new tab
-            window.open(href, '_blank');
-        }
     }
     
     saveNotepadContent() {
         localStorage.setItem('tabNowNotes', this.notepadEditor.innerHTML);
         this.saveDataImmediately();
-    }
-    
-    applyFontFamily(fontFamily) {
-        const selection = window.getSelection();
-        if (selection.rangeCount === 0) return;
-        
-        const range = selection.getRangeAt(0);
-        if (range.collapsed) {
-            // If no text is selected, apply to current word or create a marker for future typing
-            const parentElement = range.startContainer.nodeType === Node.TEXT_NODE 
-                ? range.startContainer.parentElement 
-                : range.startContainer;
-            
-            // Check if we're already inside a font span
-            let fontElement = parentElement;
-            while (fontElement && fontElement !== this.notepadEditor) {
-                if (fontElement.classList && (fontElement.classList.contains('font-sans') || 
-                    fontElement.classList.contains('font-serif') || 
-                    fontElement.classList.contains('font-mono'))) {
-                    // Replace existing font class
-                    fontElement.className = fontElement.className.replace(/font-(sans|serif|mono)/g, '').trim();
-                    fontElement.classList.add(`font-${fontFamily}`);
-                    this.saveNotepadContent();
-                    return;
-                }
-                fontElement = fontElement.parentElement;
-            }
-        } else {
-            // Apply to selected text
-            const span = document.createElement('span');
-            span.className = `font-${fontFamily}`;
-            
-            try {
-                range.surroundContents(span);
-            } catch (e) {
-                // If surrounding fails, insert the content with formatting
-                const contents = range.extractContents();
-                span.appendChild(contents);
-                range.insertNode(span);
-            }
-            
-            // Clear selection
-            selection.removeAllRanges();
-        }
-        
-        this.saveNotepadContent();
-    }
-    
-    updateFontSelector() {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            let element = range.startContainer.nodeType === Node.TEXT_NODE 
-                ? range.startContainer.parentElement 
-                : range.startContainer;
-            
-            // Check for font family classes in the current element or its parents
-            while (element && element !== this.notepadEditor) {
-                if (element.classList) {
-                    if (element.classList.contains('font-sans')) {
-                        this.fontSelector.value = 'sans';
-                        return;
-                    } else if (element.classList.contains('font-serif')) {
-                        this.fontSelector.value = 'serif';
-                        return;
-                    } else if (element.classList.contains('font-mono')) {
-                        this.fontSelector.value = 'mono';
-                        return;
-                    }
-                }
-                element = element.parentElement;
-            }
-        }
-        
-        // Default to sans if no specific font is found
-        this.fontSelector.value = 'sans';
     }
 
     
@@ -2024,10 +2011,6 @@ class TabNow {
             this.notepadEditor.innerHTML = savedNotes;
         }
         
-        // Note: Font preferences are now applied per text selection, not globally
-        
-
-        
         // Load saved tag color preference
         const savedTagColor = localStorage.getItem('tabNowSelectedTagColor');
         if (savedTagColor && this.tagColorOptions) {
@@ -2099,7 +2082,6 @@ class TabNow {
             'tabNowTodos', 
             'tabNowReminders',
             'tabNowTheme',
-            'tabNowFont',
             'tabNowSelectedTagColor',
             'tabNowTempUnit',
             'tabNowLocation',
@@ -2157,7 +2139,6 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
             'tabNowTodos', 
             'tabNowReminders',
             'tabNowTheme',
-            'tabNowFont',
             'tabNowSelectedTagColor',
             'tabNowTempUnit',
             'tabNowLocation',
@@ -2184,7 +2165,6 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
             'tabNowTodos', 
             'tabNowReminders',
             'tabNowTheme',
-            'tabNowFont',
             'tabNowSelectedTagColor',
             'tabNowTempUnit',
             'tabNowLocation',
