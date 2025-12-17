@@ -20,8 +20,9 @@ class TabNow {
         this.currentWord = '';
         this.currentWordStart = null;
         
-        // Link detection regex
-        this.urlRegex = /(?:https?:\/\/|www\.)[^\s<]+[^\s<.,;:!?)\]'"]/gi;
+        // Link detection regex - matches URLs and trims trailing punctuation
+        this.urlRegex = /(?:https?:\/\/|www\.)[^\s<>]+/gi;
+        this.trailingPunctuation = /[.,;:!?'")\]]+$/;
         
         // To-do elements
         this.addTodoBtn = document.getElementById('addTodoBtn');
@@ -438,8 +439,13 @@ class TabNow {
             let lastIndex = 0;
             
             matches.forEach(match => {
-                const url = match[0];
+                let url = match[0];
                 const startIndex = match.index;
+                
+                // Trim trailing punctuation that's likely not part of the URL
+                const trailingMatch = url.match(this.trailingPunctuation);
+                const trailingPunct = trailingMatch ? trailingMatch[0] : '';
+                url = url.replace(this.trailingPunctuation, '');
                 
                 // Add text before the URL
                 if (startIndex > lastIndex) {
@@ -454,7 +460,12 @@ class TabNow {
                 link.rel = 'noopener noreferrer';
                 fragment.appendChild(link);
                 
-                lastIndex = startIndex + url.length;
+                // Add back any trailing punctuation as plain text
+                if (trailingPunct) {
+                    fragment.appendChild(document.createTextNode(trailingPunct));
+                }
+                
+                lastIndex = startIndex + url.length + trailingPunct.length;
             });
             
             // Add remaining text after the last URL
