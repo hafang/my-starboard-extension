@@ -8,6 +8,9 @@ class TabNow {
         this.boldBtn = document.getElementById('boldBtn');
         this.italicBtn = document.getElementById('italicBtn');
         this.underlineBtn = document.getElementById('underlineBtn');
+        this.bulletListBtn = document.getElementById('bulletListBtn');
+        this.numberedListBtn = document.getElementById('numberedListBtn');
+        this.checklistBtn = document.getElementById('checklistBtn');
         this.autocompleteDropdown = document.getElementById('autocompleteDropdown');
         
         // Autocomplete state
@@ -16,6 +19,9 @@ class TabNow {
         this.autocompleteItems = [];
         this.currentWord = '';
         this.currentWordStart = null;
+        
+        // Link detection regex
+        this.urlRegex = /(?:https?:\/\/|www\.)[^\s<]+[^\s<.,;:!?)\]'"]/gi;
         
         // To-do elements
         this.addTodoBtn = document.getElementById('addTodoBtn');
@@ -146,8 +152,6 @@ class TabNow {
             'January', 'February', 'March', 'April', 'May', 'June', 
             'July', 'August', 'September', 'October', 'November', 'December',
             'tomorrow', 'yesterday', 'today', 'tonight',
-            // Common phrases (as single items)
-            'thank you', 'as soon as possible', 'let me know', 'looking forward',
         ];
         
         // Formatting buttons
@@ -166,10 +170,39 @@ class TabNow {
             this.toggleFormat('underline');
         });
         
-        // Editor input event - save and check autocomplete
-        this.notepadEditor.addEventListener('input', () => {
+        // List buttons
+        this.bulletListBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleList('insertUnorderedList');
+        });
+        
+        this.numberedListBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleList('insertOrderedList');
+        });
+        
+        this.checklistBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.insertChecklist();
+        });
+        
+        // Editor input event - save, check autocomplete, and detect links
+        this.notepadEditor.addEventListener('input', (e) => {
             this.saveNotepadContent();
             this.checkAutocomplete();
+            
+            // Auto-detect links on space or enter
+            if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n')) {
+                this.autoDetectLinks();
+            }
+        });
+        
+        // Also detect links on paste
+        this.notepadEditor.addEventListener('paste', () => {
+            setTimeout(() => {
+                this.autoDetectLinks();
+                this.saveNotepadContent();
+            }, 0);
         });
         
         // Update button states on selection change
@@ -235,12 +268,37 @@ class TabNow {
             }
         });
         
+        // Prevent mousedown from stealing focus from the editor
+        this.autocompleteDropdown.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+        });
+        
         // Handle autocomplete item clicks
         this.autocompleteDropdown.addEventListener('click', (e) => {
             const item = e.target.closest('.autocomplete-item');
             if (item) {
                 const index = parseInt(item.dataset.index);
                 this.selectAutocompleteItem(index);
+            }
+        });
+        
+        // Handle checklist checkbox clicks and link clicks
+        this.notepadEditor.addEventListener('click', (e) => {
+            // Handle checklist checkbox
+            if (e.target.classList.contains('checklist-checkbox')) {
+                e.preventDefault();
+                const item = e.target.closest('.checklist-item');
+                if (item) {
+                    item.classList.toggle('checked');
+                    this.saveNotepadContent();
+                }
+                return;
+            }
+            
+            // Handle link clicks - open in new tab
+            if (e.target.tagName === 'A') {
+                e.preventDefault();
+                window.open(e.target.href, '_blank', 'noopener,noreferrer');
             }
         });
     }
@@ -252,13 +310,169 @@ class TabNow {
     }
     
     updateFormatButtonStates() {
-        // Check if bold is active
+        // Check if formatting is active
         try {
             this.boldBtn.classList.toggle('active', document.queryCommandState('bold'));
             this.italicBtn.classList.toggle('active', document.queryCommandState('italic'));
             this.underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
+            this.bulletListBtn.classList.toggle('active', document.queryCommandState('insertUnorderedList'));
+            this.numberedListBtn.classList.toggle('active', document.queryCommandState('insertOrderedList'));
+            
+            // Check if we're in a checklist
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let element = range.startContainer;
+                if (element.nodeType === Node.TEXT_NODE) element = element.parentElement;
+                const isInChecklist = element.closest('.checklist-item') !== null;
+                this.checklistBtn.classList.toggle('active', isInChecklist);
+            }
         } catch (e) {
             // Commands might not be supported
+        }
+    }
+    
+    // List functionality
+    toggleList(command) {
+        document.execCommand(command, false, null);
+        this.notepadEditor.focus();
+        this.updateFormatButtonStates();
+        this.saveNotepadContent();
+    }
+    
+    insertChecklist() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        
+        // Check if we're already in a checklist - if so, remove it
+        const range = selection.getRangeAt(0);
+        let element = range.startContainer;
+        if (element.nodeType === Node.TEXT_NODE) element = element.parentElement;
+        const existingChecklist = element.closest('.checklist-item');
+        
+        if (existingChecklist) {
+            // Convert checklist item back to normal text
+            const text = existingChecklist.querySelector('.checklist-text')?.textContent || existingChecklist.textContent;
+            const textNode = document.createTextNode(text);
+            existingChecklist.parentNode.replaceChild(textNode, existingChecklist);
+        } else {
+            // Get selected text or current line
+            const selectedText = selection.toString() || '';
+            
+            // Create checklist item
+            const checklistItem = document.createElement('div');
+            checklistItem.className = 'checklist-item';
+            checklistItem.innerHTML = `<span class="checklist-checkbox" contenteditable="false"></span><span class="checklist-text">${this.escapeHtml(selectedText) || '<br>'}</span>`;
+            
+            // Replace selection or insert at cursor
+            if (!range.collapsed) {
+                range.deleteContents();
+            }
+            range.insertNode(checklistItem);
+            
+            // Add line break after for easier continued typing
+            const br = document.createElement('br');
+            checklistItem.parentNode.insertBefore(br, checklistItem.nextSibling);
+            
+            // Move cursor into the checklist text
+            const textSpan = checklistItem.querySelector('.checklist-text');
+            const newRange = document.createRange();
+            newRange.selectNodeContents(textSpan);
+            newRange.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+        }
+        
+        this.notepadEditor.focus();
+        this.updateFormatButtonStates();
+        this.saveNotepadContent();
+    }
+    
+    // Handle checklist checkbox clicks
+    handleChecklistClick(e) {
+        if (e.target.classList.contains('checklist-checkbox')) {
+            e.preventDefault();
+            const checkbox = e.target;
+            const item = checkbox.closest('.checklist-item');
+            if (item) {
+                item.classList.toggle('checked');
+                this.saveNotepadContent();
+            }
+        }
+    }
+    
+    // Auto-detect and format links
+    autoDetectLinks() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        
+        // Save cursor position
+        const savedRange = selection.getRangeAt(0).cloneRange();
+        
+        // Get all text nodes in the editor
+        const walker = document.createTreeWalker(
+            this.notepadEditor,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        const textNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            // Skip text nodes that are already inside links
+            if (!node.parentElement.closest('a')) {
+                textNodes.push(node);
+            }
+        }
+        
+        // Process each text node for URLs
+        textNodes.forEach(textNode => {
+            const text = textNode.textContent;
+            const matches = [...text.matchAll(this.urlRegex)];
+            
+            if (matches.length === 0) return;
+            
+            // Process matches in reverse order to preserve indices
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+            
+            matches.forEach(match => {
+                const url = match[0];
+                const startIndex = match.index;
+                
+                // Add text before the URL
+                if (startIndex > lastIndex) {
+                    fragment.appendChild(document.createTextNode(text.substring(lastIndex, startIndex)));
+                }
+                
+                // Create the link
+                const link = document.createElement('a');
+                link.href = url.startsWith('www.') ? 'https://' + url : url;
+                link.textContent = url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                fragment.appendChild(link);
+                
+                lastIndex = startIndex + url.length;
+            });
+            
+            // Add remaining text after the last URL
+            if (lastIndex < text.length) {
+                fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+            }
+            
+            // Replace the text node with the fragment
+            textNode.parentNode.replaceChild(fragment, textNode);
+        });
+        
+        // Restore cursor position (approximately)
+        try {
+            selection.removeAllRanges();
+            selection.addRange(savedRange);
+        } catch (e) {
+            // Cursor restoration failed, focus at end
+            this.notepadEditor.focus();
         }
     }
     
