@@ -1549,48 +1549,91 @@ class TabNow {
 
     async fetchRealWeatherData(lat, lon) {
         try {
-            // Using wttr.in API - a free weather API that doesn't require API key
+            // Using Open-Meteo API - free, reliable, no API key required
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // Increased to 10 seconds
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
             
-            const response = await fetch(`https://wttr.in/${lat},${lon}?format=j1`, {
+            const response = await fetch(url, {
                 signal: controller.signal
             });
-            
+
             clearTimeout(timeoutId);
-            
+
             if (!response.ok) {
                 throw new Error(`Weather API error: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            
-            if (data && data.current_condition && data.current_condition[0] && data.weather && data.weather[0]) {
-                const current = data.current_condition[0];
-                const today = data.weather[0];
+
+            if (data && data.current && data.daily) {
+                const current = data.current;
+                const daily = data.daily;
                 
+                // Convert Fahrenheit to Celsius for the C values
+                const currentTempF = Math.round(current.temperature_2m);
+                const highTempF = Math.round(daily.temperature_2m_max[0]);
+                const lowTempF = Math.round(daily.temperature_2m_min[0]);
+
                 return {
-                    currentTempF: parseInt(current.temp_F),
-                    currentTempC: parseInt(current.temp_C),
-                    highTempF: parseInt(today.maxtempF),
-                    highTempC: parseInt(today.maxtempC),
-                    lowTempF: parseInt(today.mintempF),
-                    lowTempC: parseInt(today.mintempC),
-                    temperatureF: parseInt(current.temp_F),
-                    temperatureC: parseInt(current.temp_C),
-                    description: current.weatherDesc?.[0]?.value || 'Clear',
-                    humidity: parseInt(current.humidity) || 50,
-                    windSpeedMph: parseInt(current.windspeedMiles) || 0,
-                    windSpeedKmh: parseInt(current.windspeedKmph) || 0,
-                    location: data.nearest_area?.[0]?.areaName?.[0]?.value || 'Your Location',
+                    currentTempF: currentTempF,
+                    currentTempC: Math.round((currentTempF - 32) * 5/9),
+                    highTempF: highTempF,
+                    highTempC: Math.round((highTempF - 32) * 5/9),
+                    lowTempF: lowTempF,
+                    lowTempC: Math.round((lowTempF - 32) * 5/9),
+                    temperatureF: currentTempF,
+                    temperatureC: Math.round((currentTempF - 32) * 5/9),
+                    description: this.getWeatherDescription(current.weather_code),
+                    humidity: Math.round(current.relative_humidity_2m) || 50,
+                    windSpeedMph: Math.round(current.wind_speed_10m) || 0,
+                    windSpeedKmh: Math.round(current.wind_speed_10m * 1.609) || 0,
+                    location: 'Your Location',
                     isRealData: true
                 };
             }
         } catch (error) {
+            console.log('Open-Meteo API failed, trying fallback:', error.message);
             return null;
         }
-        
+
         return null;
+    }
+    
+    // Convert WMO weather codes to human-readable descriptions
+    getWeatherDescription(code) {
+        const weatherCodes = {
+            0: 'Clear sky',
+            1: 'Mainly clear',
+            2: 'Partly cloudy',
+            3: 'Overcast',
+            45: 'Foggy',
+            48: 'Depositing rime fog',
+            51: 'Light drizzle',
+            53: 'Moderate drizzle',
+            55: 'Dense drizzle',
+            56: 'Light freezing drizzle',
+            57: 'Dense freezing drizzle',
+            61: 'Slight rain',
+            63: 'Moderate rain',
+            65: 'Heavy rain',
+            66: 'Light freezing rain',
+            67: 'Heavy freezing rain',
+            71: 'Slight snow',
+            73: 'Moderate snow',
+            75: 'Heavy snow',
+            77: 'Snow grains',
+            80: 'Slight rain showers',
+            81: 'Moderate rain showers',
+            82: 'Violent rain showers',
+            85: 'Slight snow showers',
+            86: 'Heavy snow showers',
+            95: 'Thunderstorm',
+            96: 'Thunderstorm with slight hail',
+            99: 'Thunderstorm with heavy hail'
+        };
+        return weatherCodes[code] || 'Clear';
     }
 
     generateLocationBasedWeather(lat, lon, locationName) {
