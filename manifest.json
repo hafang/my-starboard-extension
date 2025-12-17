@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "My Starboard - Personal Dashboard",
-  "version": "0.1.2",
-  "description": "A minimalistic new tab page for the ultra-productive",
+  "version": "0.3.0",
+  "description": "A minimalistic new tab page for the ultra-productive with cloud sync",
   
   "chrome_url_overrides": {
     "newtab": "mystarboard.html"
@@ -22,7 +22,11 @@
   "host_permissions": [
     "https://api.openweathermap.org/*",
     "https://wttr.in/*",
-    "https://nominatim.openstreetmap.org/*"
+    "https://nominatim.openstreetmap.org/*",
+    "https://api.open-meteo.com/*",
+    "https://*.firebaseapp.com/*",
+    "https://*.googleapis.com/*",
+    "https://*.firebaseio.com/*"
   ],
   
   "icons": {
@@ -33,6 +37,6 @@
   },
   
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self' https://www.gstatic.com https://apis.google.com; object-src 'self'"
   }
 } 
