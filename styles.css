@@ -215,10 +215,10 @@ body {
 }
 
 .format-btn.active {
-    background: var(--pink-gradient);
+    background: var(--purple-gradient);
     color: white;
-    border-color: #d4a7c8;
-    box-shadow: 0 4px 12px rgba(212, 167, 200, 0.4);
+    border-color: var(--primary-blue);
+    box-shadow: 0 4px 12px rgba(46, 170, 220, 0.4);
 }
 
 .format-btn.active::before {
@@ -291,7 +291,7 @@ body {
 }
 
 .autocomplete-item.selected {
-    background: var(--pink-gradient);
+    background: var(--purple-gradient);
     color: white;
 }
 
@@ -401,8 +401,8 @@ body {
 }
 
 .checklist-item.checked .checklist-checkbox {
-    background: var(--green-gradient);
-    border-color: #7a9471;
+    background: var(--purple-gradient);
+    border-color: var(--primary-blue);
 }
 
 .checklist-item.checked .checklist-checkbox::after {
@@ -489,7 +489,7 @@ body {
 
 
 .add-reminder-btn {
-    background: var(--green-gradient);
+    background: var(--purple-gradient);
     border: none;
     border-radius: 50%;
     width: 32px;
@@ -502,7 +502,7 @@ body {
     font-weight: 600;
     color: white;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(122, 148, 113, 0.4);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
     position: relative;
     overflow: hidden;
 }
@@ -521,7 +521,7 @@ body {
 
 .add-reminder-btn:hover {
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(122, 148, 113, 0.5);
+    box-shadow: 0 6px 20px rgba(46, 170, 220, 0.5);
 }
 
 .add-reminder-btn:hover::before {
@@ -530,7 +530,7 @@ body {
 
 .add-reminder-btn:active {
     transform: translateY(0) scale(1);
-    box-shadow: 0 2px 8px rgba(122, 148, 113, 0.4);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
 }
 
 .reminder-input-container {
@@ -556,8 +556,8 @@ body {
 }
 
 .reminder-input-container input[type="text"]:focus {
-    border-color: #7a9471;
-    box-shadow: 0 0 0 3px rgba(122, 148, 113, 0.15);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(46, 170, 220, 0.15);
 }
 
 .reminder-datetime {
@@ -580,8 +580,8 @@ body {
 
 .reminder-datetime input[type="date"]:focus,
 .reminder-datetime input[type="time"]:focus {
-    border-color: #7a9471;
-    box-shadow: 0 0 0 2px rgba(122, 148, 113, 0.15);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.15);
 }
 
 .time-section {
@@ -607,8 +607,8 @@ body {
 }
 
 .repeat-selector:focus {
-    border-color: #7a9471;
-    box-shadow: 0 0 0 2px rgba(122, 148, 113, 0.15);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 2px rgba(46, 170, 220, 0.15);
 }
 
 .all-day-toggle {
@@ -649,14 +649,14 @@ body {
 }
 
 .reminder-actions button:first-child {
-    background: #7a9471;
+    background: var(--primary-blue);
     color: white;
-    border-color: #7a9471;
+    border-color: var(--primary-blue);
 }
 
 .reminder-actions button:first-child:hover {
-    background: #6b8563;
-    border-color: #6b8563;
+    background: var(--primary-blue-hover);
+    border-color: var(--primary-blue-hover);
 }
 
 .reminders-list {
@@ -674,13 +674,13 @@ body {
 }
 
 .reminder-item:hover {
-    border-color: #7a9471;
-    box-shadow: 0 2px 8px rgba(122, 148, 113, 0.15);
+    border-color: var(--primary-blue);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.15);
 }
 
 .reminder-item.today {
-    border-color: #7a9471;
-    background: rgba(122, 148, 113, 0.08);
+    border-color: var(--primary-blue);
+    background: rgba(46, 170, 220, 0.08);
 }
 
 .reminder-text {
@@ -701,7 +701,7 @@ body {
 }
 
 .reminder-date-badge {
-    background: #7a9471;
+    background: var(--primary-blue);
     color: white;
     padding: 4px 8px;
     border-radius: 4px;
@@ -718,8 +718,8 @@ body {
 }
 
 .reminder-repeat-badge {
-    background: rgba(122, 148, 113, 0.25);
-    color: #6b8563;
+    background: rgba(46, 170, 220, 0.25);
+    color: var(--primary-blue-hover);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 11px;
@@ -727,13 +727,13 @@ body {
 }
 
 .reminder-item.recurring {
-    background: rgba(122, 148, 113, 0.03);
-    border-left: 3px solid rgba(122, 148, 113, 0.4);
+    background: rgba(46, 170, 220, 0.03);
+    border-left: 3px solid rgba(46, 170, 220, 0.4);
 }
 
 .reminder-item.recurring.today {
-    background: rgba(122, 148, 113, 0.1);
-    border-left: 3px solid #7a9471;
+    background: rgba(46, 170, 220, 0.1);
+    border-left: 3px solid var(--primary-blue);
 }
 
 .reminder-actions-bar {
@@ -765,11 +765,11 @@ body {
 }
 
 .reminder-edit {
-    color: #7a9471;
+    color: var(--primary-blue);
 }
 
 .reminder-edit:hover {
-    background: rgba(122, 148, 113, 0.15);
+    background: rgba(46, 170, 220, 0.15);
     transform: scale(1.1);
 }
 
@@ -857,7 +857,7 @@ body {
 }
 
 .add-todo-btn {
-    background: linear-gradient(135deg, #b19cd9 0%, #9d87c8 100%);
+    background: var(--purple-gradient);
     border: none;
     border-radius: 50%;
     width: 32px;
@@ -870,7 +870,7 @@ body {
     font-weight: 600;
     color: white;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(177, 156, 217, 0.4);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
     position: relative;
     overflow: hidden;
 }
@@ -889,7 +889,7 @@ body {
 
 .add-todo-btn:hover {
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(177, 156, 217, 0.5);
+    box-shadow: 0 6px 20px rgba(46, 170, 220, 0.5);
 }
 
 .add-todo-btn:hover::before {
@@ -898,11 +898,11 @@ body {
 
 .add-todo-btn:active {
     transform: translateY(0) scale(1);
-    box-shadow: 0 2px 8px rgba(177, 156, 217, 0.4);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
 }
 
 .clear-todos-btn {
-    background: linear-gradient(135deg, #f39e9e 0%, #ca7a7a 100%);
+    background: var(--purple-gradient);
     border: none;
     border-radius: 6px;
     padding: 6px 12px;
@@ -914,7 +914,7 @@ body {
     font-weight: 500;
     color: white;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(225, 112, 85, 0.25);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.25);
     position: relative;
     overflow: hidden;
 }
@@ -933,7 +933,7 @@ body {
 
 .clear-todos-btn:hover {
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(225, 112, 85, 0.35);
+    box-shadow: 0 6px 20px rgba(46, 170, 220, 0.35);
 }
 
 .clear-todos-btn:hover::before {
@@ -942,7 +942,7 @@ body {
 
 .clear-todos-btn:active {
     transform: translateY(0) scale(1);
-    box-shadow: 0 2px 8px rgba(225, 112, 85, 0.25);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.25);
 }
 
 .todo-input-container {
@@ -1019,8 +1019,8 @@ body {
 }
 
 .todo-tag-section input:focus {
-    border-color: #787490;
-    box-shadow: 0 0 0 3px rgba(120, 116, 144, 0.15);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(46, 170, 220, 0.15);
 }
 
 .tag-color-options {
@@ -1086,7 +1086,7 @@ body {
 }
 
 .todo-item.drag-over {
-    border-top: 2px solid #787490;
+    border-top: 2px solid var(--primary-blue);
     padding-top: 6px;
 }
 
@@ -1142,9 +1142,9 @@ body {
 }
 
 .todo-checkbox.checked {
-    background: linear-gradient(135deg, #b19cd9 0%, #9d87c8 100%);
-    border-color: #b19cd9;
-    box-shadow: 0 2px 8px rgba(177, 156, 217, 0.4);
+    background: var(--purple-gradient);
+    border-color: var(--primary-blue);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
 }
 
 .todo-checkbox.checked::after {
@@ -1215,11 +1215,11 @@ body {
     justify-content: center;
     min-width: 24px;
     height: 24px;
-    color: #787490;
+    color: var(--primary-blue);
 }
 
 .todo-edit:hover {
-    background: rgba(120, 116, 144, 0.15);
+    background: rgba(46, 170, 220, 0.15);
     transform: scale(1.1);
 }
 
@@ -1457,10 +1457,10 @@ body {
 }
 
 .temp-toggle-btn.active {
-    background: linear-gradient(135deg, #f4c2a1 0%, #e8b088 100%);
+    background: var(--purple-gradient);
     color: white;
-    border-color: #f4c2a1;
-    box-shadow: 0 2px 8px rgba(244, 194, 161, 0.4);
+    border-color: var(--primary-blue);
+    box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
 }
 
 .temp-toggle-btn.active::before {
