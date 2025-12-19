@@ -1102,14 +1102,18 @@ body {
 
 .todo-item:focus {
     outline: none;
-    border-radius: 4px;
+    border-radius: 6px;
     background: var(--hover-color);
     box-shadow: inset 0 0 0 2px var(--accent-color);
+    padding: 10px 8px;
+    margin: -2px -4px;
 }
 
 .todo-item:focus-visible {
     outline: none;
     box-shadow: inset 0 0 0 2px var(--primary-blue);
+    padding: 10px 8px;
+    margin: -2px -4px;
 }
 
 .todo-drag-handle {
