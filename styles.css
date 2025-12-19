@@ -19,7 +19,7 @@
     /* Simplified gradients */
     --glass-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
     --glass-hover-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
-    --purple-gradient: linear-gradient(135deg, #2eaadc 0%, #0b76b7 100%);
+    --blue-gradient: linear-gradient(135deg, #399ddb 0%, #0b76b7 100%);
     --green-gradient: linear-gradient(135deg, #4d9375 0%, #3d7a60 100%);
     --pink-gradient: linear-gradient(135deg, #9b9a97 0%, #787774 100%);
     --orange-gradient: linear-gradient(135deg, #d9730d 0%, #c4660c 100%);
@@ -215,7 +215,7 @@ body {
 }
 
 .format-btn.active {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     color: white;
     border-color: var(--primary-blue);
     box-shadow: 0 4px 12px rgba(46, 170, 220, 0.4);
@@ -291,7 +291,7 @@ body {
 }
 
 .autocomplete-item.selected {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     color: white;
 }
 
@@ -401,7 +401,7 @@ body {
 }
 
 .checklist-item.checked .checklist-checkbox {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     border-color: var(--primary-blue);
 }
 
@@ -489,7 +489,7 @@ body {
 
 
 .add-reminder-btn {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     border: none;
     border-radius: 50%;
     width: 32px;
@@ -857,7 +857,7 @@ body {
 }
 
 .add-todo-btn {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     border: none;
     border-radius: 50%;
     width: 32px;
@@ -902,7 +902,7 @@ body {
 }
 
 .clear-todos-btn {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     border: none;
     border-radius: 6px;
     padding: 6px 12px;
@@ -1142,7 +1142,7 @@ body {
 }
 
 .todo-checkbox.checked {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     border-color: var(--primary-blue);
     box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
 }
@@ -1457,7 +1457,7 @@ body {
 }
 
 .temp-toggle-btn.active {
-    background: var(--purple-gradient);
+    background: var(--blue-gradient);
     color: white;
     border-color: var(--primary-blue);
     box-shadow: 0 2px 8px rgba(46, 170, 220, 0.4);
