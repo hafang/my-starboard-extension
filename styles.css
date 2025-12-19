@@ -1094,6 +1094,18 @@ body {
     border-bottom: none;
 }
 
+.todo-item:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+    background: var(--hover-color);
+}
+
+.todo-item:focus-visible {
+    outline: 2px solid var(--primary-blue);
+    outline-offset: 2px;
+}
+
 .todo-drag-handle {
     color: var(--accent-color);
     font-size: 12px;

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "My Starboard - Personal Dashboard",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A minimalistic new tab page for the ultra-productive",
   
   "chrome_url_overrides": {

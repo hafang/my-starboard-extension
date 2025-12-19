@@ -65,6 +65,7 @@ class TabNow {
 
         this.selectedTagColor = '#7a9471'; // Default tag color
         this.draggedElement = null; // Track dragged todo item
+        this.notepadSaveTimer = null; // Debounce timer for notepad saves
         this.weatherData = null;
         this.weatherCacheTime = null; // Track when weather was last cached
         this.weatherCacheDuration = 10 * 60 * 1000; // Cache for 10 minutes (real weather updates more frequently)
@@ -194,9 +195,9 @@ class TabNow {
             this.insertChecklist();
         });
         
-        // Editor input event - save, check autocomplete, and detect links
+        // Editor input event - save (debounced), check autocomplete, and detect links
         this.notepadEditor.addEventListener('input', (e) => {
-            this.saveNotepadContent();
+            this.debouncedSaveNotepad();
             this.checkAutocomplete();
             
             // Auto-detect links on space or enter
@@ -209,7 +210,7 @@ class TabNow {
         this.notepadEditor.addEventListener('paste', () => {
             setTimeout(() => {
                 this.autoDetectLinks();
-                this.saveNotepadContent();
+                this.debouncedSaveNotepad();
             }, 0);
         });
         
@@ -311,6 +312,14 @@ class TabNow {
         });
     }
     
+    /**
+     * Toggle text formatting (bold, italic, underline)
+     * Note: execCommand is deprecated but still widely supported in browsers.
+     * For a more future-proof solution, consider using:
+     * - Selection API with document.getSelection()
+     * - Range.surroundContents() with appropriate span elements
+     * - A library like Tiptap, ProseMirror, or Quill
+     */
     toggleFormat(command) {
         document.execCommand(command, false, null);
         this.notepadEditor.focus();
@@ -340,7 +349,10 @@ class TabNow {
         }
     }
     
-    // List functionality
+    /**
+     * Toggle list formatting (bullet/numbered lists)
+     * Uses deprecated execCommand - see toggleFormat() for future alternatives
+     */
     toggleList(command) {
         document.execCommand(command, false, null);
         this.notepadEditor.focus();
@@ -655,6 +667,14 @@ class TabNow {
         localStorage.setItem('tabNowNotes', this.notepadEditor.innerHTML);
         this.saveDataImmediately();
     }
+    
+    // Debounced version of saveNotepadContent for use during typing
+    debouncedSaveNotepad() {
+        clearTimeout(this.notepadSaveTimer);
+        this.notepadSaveTimer = setTimeout(() => {
+            this.saveNotepadContent();
+        }, 500); // Save 500ms after user stops typing
+    }
 
     
     // To-Do List Functionality
@@ -857,6 +877,7 @@ class TabNow {
             todoItem.draggable = true;
             todoItem.setAttribute('data-id', todo.id);
             todoItem.setAttribute('data-index', index);
+            todoItem.setAttribute('tabindex', '0'); // Make focusable for keyboard nav
             
             const tagHtml = todo.tag && todo.tagColor ? 
                 `<span class="todo-tag" style="background-color: ${todo.tagColor};">${this.escapeHtml(todo.tag)}</span>` : '';
@@ -881,6 +902,56 @@ class TabNow {
             todoItem.addEventListener('dragenter', (e) => this.handleDragEnter(e));
             todoItem.addEventListener('dragleave', (e) => this.handleDragLeave(e));
             todoItem.addEventListener('dragend', (e) => this.handleDragEnd(e));
+            
+            // Add keyboard event listeners for accessibility
+            todoItem.addEventListener('keydown', (e) => {
+                const todoId = parseInt(todoItem.getAttribute('data-id'));
+                const currentIndex = parseInt(todoItem.getAttribute('data-index'));
+                
+                switch(e.key) {
+                    case 'Enter':
+                    case ' ':
+                        e.preventDefault();
+                        this.toggleTodo(todoId);
+                        break;
+                    case 'Delete':
+                    case 'Backspace':
+                        e.preventDefault();
+                        this.deleteTodo(todoId);
+                        // Focus next item or previous if last
+                        setTimeout(() => {
+                            const items = this.todoList.querySelectorAll('.todo-item');
+                            if (items.length > 0) {
+                                const focusIndex = Math.min(currentIndex, items.length - 1);
+                                items[focusIndex]?.focus();
+                            }
+                        }, 0);
+                        break;
+                    case 'e':
+                    case 'E':
+                        e.preventDefault();
+                        this.editTodo(todoId);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            this.moveTodo(currentIndex, currentIndex - 1);
+                            setTimeout(() => {
+                                this.todoList.querySelectorAll('.todo-item')[currentIndex - 1]?.focus();
+                            }, 0);
+                        }
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (currentIndex < this.todos.length - 1) {
+                            this.moveTodo(currentIndex, currentIndex + 1);
+                            setTimeout(() => {
+                                this.todoList.querySelectorAll('.todo-item')[currentIndex + 1]?.focus();
+                            }, 0);
+                        }
+                        break;
+                }
+            });
             
             // Prevent dragging when clicking on interactive elements
             const checkbox = todoItem.querySelector('.todo-checkbox');
@@ -992,6 +1063,18 @@ class TabNow {
                 return closest;
             }
         }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Move todo from one index to another (for keyboard navigation)
+    moveTodo(fromIndex, toIndex) {
+        if (fromIndex < 0 || fromIndex >= this.todos.length) return;
+        if (toIndex < 0 || toIndex >= this.todos.length) return;
+        
+        const [movedTodo] = this.todos.splice(fromIndex, 1);
+        this.todos.splice(toIndex, 0, movedTodo);
+        
+        this.saveTodos();
+        this.renderTodos();
     }
 
     // Reminders Functionality
@@ -1898,29 +1981,69 @@ class TabNow {
         }
     }
     
-    changeLocation() {
+    async changeLocation() {
         const newLocation = prompt('Enter a location (e.g., "New York, NY" or "London, UK"):');
         
         if (newLocation && newLocation.trim()) {
-            // In a real implementation, you'd geocode this location
-            // For demo, we'll create a mock location object
-            this.currentLocation = {
-                name: newLocation.trim(),
-                lat: Math.random() * 180 - 90, // Random lat for demo
-                lon: Math.random() * 360 - 180 // Random lon for demo
-            };
+            // Show loading state
+            this.weatherContent.innerHTML = '<div class="weather-loading">Finding location...</div>';
             
-            // Clear weather cache since location changed
-            this.weatherData = null;
-            this.weatherCacheTime = null;
-            localStorage.removeItem('tabNowWeatherCache');
-            
-            // Save location preference
-            localStorage.setItem('tabNowLocation', JSON.stringify(this.currentLocation));
-            this.saveDataImmediately();
-            
-            // Reload weather for new location
-            this.loadWeather(true);
+            try {
+                // Geocode the location using Nominatim API
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(newLocation.trim())}&limit=1`,
+                    {
+                        headers: { 'User-Agent': 'MyStarboard-Extension/1.0' },
+                        signal: controller.signal
+                    }
+                );
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error('Geocoding API error');
+                }
+                
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    alert('Location not found. Please try a different search term.');
+                    this.loadWeather(); // Reload current weather
+                    return;
+                }
+                
+                // Use the first result
+                const result = data[0];
+                this.currentLocation = {
+                    name: result.display_name.split(',').slice(0, 2).join(',').trim() || newLocation.trim(),
+                    lat: parseFloat(result.lat),
+                    lon: parseFloat(result.lon)
+                };
+                
+                // Clear weather cache since location changed
+                this.weatherData = null;
+                this.weatherCacheTime = null;
+                localStorage.removeItem('tabNowWeatherCache');
+                
+                // Save location preference
+                localStorage.setItem('tabNowLocation', JSON.stringify(this.currentLocation));
+                this.saveDataImmediately();
+                
+                // Reload weather for new location
+                this.loadWeather(true);
+                
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                if (error.name === 'AbortError') {
+                    alert('Location search timed out. Please try again.');
+                } else {
+                    alert('Could not find location. Please try again with a different search term.');
+                }
+                this.loadWeather(); // Reload current weather
+            }
         }
     }
     
@@ -2230,7 +2353,18 @@ class TabNow {
     }
     
     openClockSettings() {
-        alert('Click the location names to edit them, or use the + button to add more time zones (max 3 total).');
+        alert(`World Clock Tips:
+
+• Click any location name to edit it
+• Use "+ Add Time Zone" to add up to 3 locations
+• Swipe left (or drag) on a location to reveal delete
+• Click outside a revealed delete button to cancel
+
+Common timezone examples:
+  America/New_York, America/Los_Angeles
+  Europe/London, Europe/Paris, Europe/Berlin
+  Asia/Tokyo, Asia/Shanghai, Asia/Dubai
+  Australia/Sydney, Pacific/Auckland`);
     }
 
     // Data Persistence
@@ -2334,6 +2468,30 @@ class TabNow {
             }
         });
         
+        // Close dropdown with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // Close data dropdown if open
+                if (this.dataDropdown?.classList.contains('show')) {
+                    this.dataDropdown.classList.remove('show');
+                    e.preventDefault();
+                    return;
+                }
+                // Close todo input if open
+                if (this.todoInputContainer?.style.display !== 'none') {
+                    this.hideTodoInput();
+                    e.preventDefault();
+                    return;
+                }
+                // Close reminder input if open
+                if (this.reminderInputContainer?.style.display !== 'none') {
+                    this.hideReminderInput();
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+        
         // Export data
         if (this.exportDataBtn) {
             this.exportDataBtn.addEventListener('click', () => {
@@ -2361,7 +2519,7 @@ class TabNow {
     // Export all data as JSON file
     exportData() {
         const data = {
-            version: '0.3.0',
+            version: '0.3.1',
             exportDate: new Date().toISOString(),
             notes: localStorage.getItem('tabNowNotes') || '',
             todos: JSON.parse(localStorage.getItem('tabNowTodos') || '[]'),
