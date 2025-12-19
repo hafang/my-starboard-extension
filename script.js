@@ -2306,8 +2306,23 @@ class TabNow {
             }
         }
         this.renderReminders(); // Always render reminders (shows "no reminders" message when empty)
-
-
+        
+        // Load additional clock locations
+        const savedClockLocations = localStorage.getItem('tabNowAdditionalClockLocations');
+        if (savedClockLocations) {
+            try {
+                this.additionalClockLocations = JSON.parse(savedClockLocations);
+                this.renderAdditionalLocations();
+            } catch (e) {
+                // Failed to parse
+            }
+        }
+        
+        console.log('Data loaded:', {
+            notesLength: savedNotes?.length || 0,
+            todosCount: this.todos.length,
+            remindersCount: this.reminders.length
+        });
     }
     
     // Data Menu Setup
@@ -2491,6 +2506,8 @@ class TabNow {
                 const value = localStorage.getItem(key);
                 if (value) tabNowData[key] = value;
             });
+            
+            console.log('Pushing to cloud:', Object.keys(tabNowData), tabNowData);
 
             chrome.storage.sync.set({ tabNowData }, () => {
                 if (chrome.runtime.lastError) {
@@ -2527,20 +2544,34 @@ class TabNow {
                 return;
             }
             
+            console.log('Cloud data received:', result.tabNowData);
+            
             if (result.tabNowData && Object.keys(result.tabNowData).length > 0) {
                 // Confirm before overwriting
                 const cloudNotes = result.tabNowData.tabNowNotes || '';
                 const cloudTodos = result.tabNowData.tabNowTodos || '[]';
-                const todoCount = JSON.parse(cloudTodos).length;
+                let todoCount = 0;
+                try {
+                    todoCount = JSON.parse(cloudTodos).length;
+                } catch (e) {
+                    console.error('Failed to parse cloud todos:', e);
+                }
+                const cloudReminders = result.tabNowData.tabNowReminders || '[]';
+                let reminderCount = 0;
+                try {
+                    reminderCount = JSON.parse(cloudReminders).length;
+                } catch (e) {}
                 
-                if (!confirm(`Pull data from cloud?\n\nCloud has: ${cloudNotes.length} chars of notes, ${todoCount} todos\n\nThis will replace your current data.`)) {
+                if (!confirm(`Pull data from cloud?\n\nCloud has:\n- ${cloudNotes.length} chars of notes\n- ${todoCount} todos\n- ${reminderCount} reminders\n\nThis will replace your current data.`)) {
                     this.updateSyncStatus('synced');
                     this.updateSyncInfo('Sync: Connected ✓');
                     return;
                 }
                 
                 // Restore all data from cloud
+                console.log('Restoring keys:', Object.keys(result.tabNowData));
                 Object.keys(result.tabNowData).forEach(key => {
+                    console.log(`Setting ${key}:`, result.tabNowData[key]?.substring?.(0, 100) || result.tabNowData[key]);
                     localStorage.setItem(key, result.tabNowData[key]);
                 });
                 
@@ -2549,6 +2580,7 @@ class TabNow {
                 this.updateSyncInfo('Sync: Connected ✓');
                 this.showNotification('✅ Data pulled from cloud!');
             } else {
+                console.log('No cloud data found or empty:', result);
                 this.updateSyncStatus('synced');
                 this.updateSyncInfo('Sync: No cloud data');
                 this.showNotification('No data found in cloud storage');
