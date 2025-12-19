@@ -19,7 +19,7 @@
     /* Simplified gradients */
     --glass-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
     --glass-hover-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
-    --blue-gradient: linear-gradient(135deg, #2ea4df 0%, #2ea4df 100%);
+    --blue-gradient: linear-gradient(135deg, #227199 0%, #227199 100%);
     --green-gradient: linear-gradient(135deg, #4d9375 0%, #3d7a60 100%);
     --pink-gradient: linear-gradient(135deg, #b3ddef 0%, #787774 100%);
     --orange-gradient: linear-gradient(135deg, #d9730d 0%, #c4660c 100%);
