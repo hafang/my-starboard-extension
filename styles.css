@@ -1,42 +1,46 @@
-/* CSS Custom Properties for Theming */
+/* CSS Custom Properties for Theming - Notion-inspired */
 :root {
-    --bg-color: #fdfdf8;
-    --text-color: #4a4a4a;
-    --secondary-bg: rgba(156, 163, 175, 0.08);
-    --border-color: rgba(156, 163, 175, 0.2);
-    --hover-color: rgba(156, 163, 175, 0.15);
-    --shadow: 0 2px 10px rgba(156, 163, 175, 0.15);
-    --input-bg: rgba(249, 250, 251, 0.9);
-    --button-bg: rgba(156, 163, 175, 0.1);
-    --button-text: #6b7280;
-    --accent-color: #9ca3af;
-    --accent-color-rgb: 156, 163, 175;
-    --link-color: #4a9eff;
-    --link-hover-color: #2684ff;
+    --bg-color: #ffffff;
+    --text-color: #37352f;
+    --secondary-bg: #f7f6f3;
+    --border-color: #e3e2de;
+    --hover-color: #efefef;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --input-bg: #ffffff;
+    --button-bg: #f7f6f3;
+    --button-text: #37352f;
+    --accent-color: #9b9a97;
+    --accent-color-rgb: 155, 154, 151;
+    --link-color: #2eaadc;
+    --link-hover-color: #0b76b7;
+    --primary-blue: #2eaadc;
+    --primary-blue-hover: #0b76b7;
     
-    /* Common gradients */
+    /* Simplified gradients */
     --glass-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
     --glass-hover-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
-    --purple-gradient: linear-gradient(135deg, #b19cd9 0%, #9d87c8 100%);
-    --green-gradient: linear-gradient(135deg, #7a9471 0%, #6b8563 100%);
-    --pink-gradient: linear-gradient(135deg, #d4a7c8 0%, #c2a0bc 100%);
-    --orange-gradient: linear-gradient(135deg, #f4c2a1 0%, #e8b088 100%);
+    --purple-gradient: linear-gradient(135deg, #2eaadc 0%, #0b76b7 100%);
+    --green-gradient: linear-gradient(135deg, #4d9375 0%, #3d7a60 100%);
+    --pink-gradient: linear-gradient(135deg, #9b9a97 0%, #787774 100%);
+    --orange-gradient: linear-gradient(135deg, #d9730d 0%, #c4660c 100%);
 }
 
 [data-theme="dark"] {
-    --bg-color: #1f1f22;
-    --text-color: #e8e8e8;
-    --secondary-bg: rgba(128, 128, 128, 0.08);
-    --border-color: rgba(128, 128, 128, 0.15);
-    --hover-color: rgba(128, 128, 128, 0.12);
-    --shadow: 0 2px 10px rgba(128, 128, 128, 0.1);
-    --input-bg: rgba(31, 31, 34, 0.8);
-    --button-bg: rgba(128, 128, 128, 0.08);
-    --button-text: #c9c9c9;
-    --accent-color: #a8a8a8;
-    --accent-color-rgb: 168, 168, 168;
-    --link-color: #66b2ff;
-    --link-hover-color: #99ccff;
+    --bg-color: #191919;
+    --text-color: #e6e6e5;
+    --secondary-bg: #252525;
+    --border-color: #373737;
+    --hover-color: #2f2f2f;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --input-bg: #252525;
+    --button-bg: #252525;
+    --button-text: #e6e6e5;
+    --accent-color: #9b9a97;
+    --accent-color-rgb: 155, 154, 151;
+    --link-color: #529cca;
+    --link-hover-color: #6eb3db;
+    --primary-blue: #529cca;
+    --primary-blue-hover: #6eb3db;
 }
 
 /* Global Styles */
@@ -64,54 +68,37 @@ body {
 
 /* Theme Toggle */
 .theme-toggle {
-    background: var(--button-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: background 0.1s ease;
     position: relative;
-    overflow: hidden;
-    color: var(--button-text);
-}
-
-.theme-toggle::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--glass-overlay);
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    color: var(--accent-color);
 }
 
 .theme-toggle:hover {
     background: var(--hover-color);
-    border-color: var(--accent-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px) scale(1.05);
-}
-
-.theme-toggle:hover::before {
-    opacity: 1;
 }
 
 .theme-toggle:active {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: var(--border-color);
 }
 
 .theme-icon {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     object-fit: contain;
+    opacity: 0.7;
+}
+
+.theme-toggle:hover .theme-icon {
+    opacity: 1;
 }
 
 /* Main Content Layout */
@@ -2017,38 +2004,38 @@ a:hover {
 }
 
 .data-menu-btn {
-    background: var(--button-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: background 0.1s ease;
+    color: var(--accent-color);
 }
 
 .data-menu-btn:hover {
     background: var(--hover-color);
-    border-color: var(--accent-color);
 }
 
 .data-dropdown {
     position: absolute;
     top: calc(100% + 8px);
-    right: 0;
+    left: 0;
     background: var(--bg-color);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    min-width: 180px;
-    padding: 8px 0;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-width: 200px;
+    padding: 6px 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-4px);
+    transition: all 0.15s ease;
     z-index: 10000;
 }
 
@@ -2060,19 +2047,22 @@ a:hover {
 
 .data-dropdown .dropdown-item {
     width: 100%;
-    padding: 12px 16px;
-    background: var(--bg-color);
+    padding: 8px 12px;
+    background: transparent;
     border: none;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--text-color);
     text-align: left;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background 0.1s ease;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     white-space: nowrap;
+    border-radius: 4px;
+    margin: 0 6px;
+    width: calc(100% - 12px);
 }
 
 .data-dropdown .dropdown-item:hover {
@@ -2081,54 +2071,41 @@ a:hover {
 
 /* Dark mode specific overrides for dropdown */
 [data-theme="dark"] .data-dropdown {
-    background: #1e1e1e;
-    border-color: #444;
-}
-
-[data-theme="dark"] .data-dropdown .dropdown-item {
-    background: #1e1e1e;
+    background: #252525;
+    border-color: #373737;
 }
 
 [data-theme="dark"] .data-dropdown .dropdown-item:hover {
-    background: #2a2a2a;
+    background: #363636;
 }
 
 /* Light mode specific overrides for dropdown */
 [data-theme="light"] .data-dropdown {
     background: #ffffff;
-    border-color: #ddd;
-}
-
-[data-theme="light"] .data-dropdown .dropdown-item {
-    background: #ffffff;
+    border-color: #e3e2de;
 }
 
 [data-theme="light"] .data-dropdown .dropdown-item:hover {
-    background: #f5f5f5;
+    background: #f7f6f3;
 }
 
 .dropdown-divider {
     height: 1px;
     background: var(--border-color);
-    margin: 6px 0;
+    margin: 4px 12px;
 }
 
 .dropdown-header {
-    padding: 8px 16px 6px;
-    font-size: 11px;
-    font-weight: 600;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
     color: var(--accent-color);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .dropdown-info {
-    padding: 10px 16px;
-    font-size: 11px;
+    padding: 8px 12px;
+    font-size: 12px;
     color: var(--accent-color);
-    text-align: center;
-    border-top: 1px solid var(--border-color);
-    margin-top: 4px;
     line-height: 1.4;
 }
 
