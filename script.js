@@ -2575,7 +2575,41 @@ class TabNow {
                     localStorage.setItem(key, result.tabNowData[key]);
                 });
                 
-                this.loadSavedData();
+                // Verify data was saved
+                console.log('Verifying localStorage after save:', {
+                    notes: localStorage.getItem('tabNowNotes')?.substring(0, 50),
+                    todos: localStorage.getItem('tabNowTodos'),
+                    reminders: localStorage.getItem('tabNowReminders')
+                });
+                
+                // Manually update the UI components
+                const savedNotes = localStorage.getItem('tabNowNotes');
+                if (savedNotes) {
+                    this.notepadEditor.innerHTML = savedNotes;
+                }
+                
+                const savedTodos = localStorage.getItem('tabNowTodos');
+                if (savedTodos) {
+                    try {
+                        this.todos = JSON.parse(savedTodos);
+                        console.log('Parsed todos:', this.todos);
+                        this.renderTodos();
+                    } catch (e) {
+                        console.error('Failed to parse todos:', e);
+                    }
+                }
+                
+                const savedReminders = localStorage.getItem('tabNowReminders');
+                if (savedReminders) {
+                    try {
+                        this.reminders = JSON.parse(savedReminders);
+                        console.log('Parsed reminders:', this.reminders);
+                        this.renderReminders();
+                    } catch (e) {
+                        console.error('Failed to parse reminders:', e);
+                    }
+                }
+                
                 this.updateSyncStatus('synced');
                 this.updateSyncInfo('Sync: Connected ✓');
                 this.showNotification('✅ Data pulled from cloud!');
