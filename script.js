@@ -72,17 +72,12 @@ class TabNow {
         this.currentLocation = null;
         this.additionalClockLocations = []; // User's additional time zones (max 2 additional)
         
-        // Sync & Data elements
-        this.syncIndicator = document.getElementById('syncIndicator');
+        // Data menu elements
         this.dataMenuBtn = document.getElementById('dataMenuBtn');
         this.dataDropdown = document.getElementById('dataDropdown');
         this.exportDataBtn = document.getElementById('exportDataBtn');
         this.importDataBtn = document.getElementById('importDataBtn');
         this.importFileInput = document.getElementById('importFileInput');
-        this.forceSyncBtn = document.getElementById('forceSyncBtn');
-        this.pullFromCloudBtn = document.getElementById('pullFromCloudBtn');
-        this.syncInfo = document.getElementById('syncInfo');
-
         this.init();
     }
     
@@ -99,9 +94,6 @@ class TabNow {
         
         // Cleanup old reminders on startup
         this.cleanupOldReminders();
-        
-        // Initialize Chrome sync after data is loaded
-        this.initChromeSync();
     }
     
     setupTitle() {
@@ -2364,22 +2356,6 @@ class TabNow {
                 e.target.value = ''; // Reset for future imports
             });
         }
-        
-        // Force sync (push)
-        if (this.forceSyncBtn) {
-            this.forceSyncBtn.addEventListener('click', () => {
-                this.forceSync();
-                this.dataDropdown.classList.remove('show');
-            });
-        }
-        
-        // Pull from cloud
-        if (this.pullFromCloudBtn) {
-            this.pullFromCloudBtn.addEventListener('click', () => {
-                this.pullFromCloud();
-                this.dataDropdown.classList.remove('show');
-            });
-        }
     }
     
     // Export all data as JSON file
@@ -2490,235 +2466,6 @@ class TabNow {
         reader.readAsText(file);
     }
     
-    // Force sync to Chrome storage (Push)
-    forceSync() {
-        this.updateSyncStatus('syncing');
-
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-            const keysToSync = [
-                'tabNowNotes', 'tabNowTodos', 'tabNowReminders', 'tabNowTheme',
-                'tabNowSelectedTagColor', 'tabNowTempUnit', 'tabNowLocation',
-                'tabNowWeatherCache', 'tabNowLocalLocationName', 'tabNowAdditionalClockLocations'
-            ];
-
-            const tabNowData = {};
-            keysToSync.forEach(key => {
-                const value = localStorage.getItem(key);
-                if (value) tabNowData[key] = value;
-            });
-            
-            console.log('Pushing to cloud:', Object.keys(tabNowData), tabNowData);
-
-            chrome.storage.sync.set({ tabNowData }, () => {
-                if (chrome.runtime.lastError) {
-                    console.error('Sync error:', chrome.runtime.lastError);
-                    this.updateSyncStatus('error');
-                    this.showNotification('Sync failed: ' + chrome.runtime.lastError.message);
-                } else {
-                    this.updateSyncStatus('synced');
-                    this.updateSyncInfo('Sync: Connected ✓');
-                    this.showNotification('✅ Data pushed to Chrome cloud!');
-                }
-            });
-        } else {
-            this.updateSyncStatus('error');
-            this.showNotification('Chrome sync not available');
-        }
-    }
-    
-    // Pull data from Chrome cloud storage
-    pullFromCloud() {
-        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
-            this.showNotification('Chrome sync not available');
-            return;
-        }
-        
-        this.updateSyncStatus('syncing');
-        
-        chrome.storage.sync.get(['tabNowData'], (result) => {
-            if (chrome.runtime.lastError) {
-                console.error('Pull error:', chrome.runtime.lastError);
-                this.updateSyncStatus('error');
-                this.updateSyncInfo('Sync: Pull failed');
-                this.showNotification('Pull failed: ' + chrome.runtime.lastError.message);
-                return;
-            }
-            
-            console.log('Cloud data received:', result.tabNowData);
-            
-            if (result.tabNowData && Object.keys(result.tabNowData).length > 0) {
-                // Confirm before overwriting
-                const cloudNotes = result.tabNowData.tabNowNotes || '';
-                const cloudTodos = result.tabNowData.tabNowTodos || '[]';
-                let todoCount = 0;
-                try {
-                    todoCount = JSON.parse(cloudTodos).length;
-                } catch (e) {
-                    console.error('Failed to parse cloud todos:', e);
-                }
-                const cloudReminders = result.tabNowData.tabNowReminders || '[]';
-                let reminderCount = 0;
-                try {
-                    reminderCount = JSON.parse(cloudReminders).length;
-                } catch (e) {}
-                
-                if (!confirm(`Pull data from cloud?\n\nCloud has:\n- ${cloudNotes.length} chars of notes\n- ${todoCount} todos\n- ${reminderCount} reminders\n\nThis will replace your current data.`)) {
-                    this.updateSyncStatus('synced');
-                    this.updateSyncInfo('Sync: Connected ✓');
-                    return;
-                }
-                
-                // Restore all data from cloud
-                console.log('=== STARTING DATA RESTORE ===');
-                console.log('Full result.tabNowData:', JSON.stringify(result.tabNowData));
-                console.log('Keys to restore:', Object.keys(result.tabNowData));
-                
-                // Save each key individually with verification
-                const keys = Object.keys(result.tabNowData);
-                for (let i = 0; i < keys.length; i++) {
-                    const key = keys[i];
-                    const value = result.tabNowData[key];
-                    console.log(`[${i}] Key: ${key}, Value type: ${typeof value}, Value preview:`, 
-                        typeof value === 'string' ? value.substring(0, 80) : value);
-                    
-                    if (value !== undefined && value !== null) {
-                        localStorage.setItem(key, value);
-                        const verify = localStorage.getItem(key);
-                        console.log(`[${i}] Verified ${key} saved:`, verify ? 'YES' : 'NO');
-                    } else {
-                        console.log(`[${i}] SKIPPING ${key} - value is null/undefined`);
-                    }
-                }
-                
-                console.log('=== RESTORE COMPLETE ===');
-                
-                // Verify data was saved
-                console.log('Verifying localStorage after save:', {
-                    notes: localStorage.getItem('tabNowNotes')?.substring(0, 50),
-                    todos: localStorage.getItem('tabNowTodos'),
-                    reminders: localStorage.getItem('tabNowReminders')
-                });
-                
-                // Manually update the UI components
-                const savedNotes = localStorage.getItem('tabNowNotes');
-                if (savedNotes) {
-                    this.notepadEditor.innerHTML = savedNotes;
-                }
-                
-                const savedTodos = localStorage.getItem('tabNowTodos');
-                if (savedTodos) {
-                    try {
-                        this.todos = JSON.parse(savedTodos);
-                        console.log('Parsed todos:', this.todos);
-                        this.renderTodos();
-                    } catch (e) {
-                        console.error('Failed to parse todos:', e);
-                    }
-                }
-                
-                const savedReminders = localStorage.getItem('tabNowReminders');
-                if (savedReminders) {
-                    try {
-                        this.reminders = JSON.parse(savedReminders);
-                        console.log('Parsed reminders:', this.reminders);
-                        this.renderReminders();
-                    } catch (e) {
-                        console.error('Failed to parse reminders:', e);
-                    }
-                }
-                
-                this.updateSyncStatus('synced');
-                this.updateSyncInfo('Sync: Connected ✓');
-                this.showNotification('✅ Data pulled from cloud!');
-            } else {
-                console.log('No cloud data found or empty:', result);
-                this.updateSyncStatus('synced');
-                this.updateSyncInfo('Sync: No cloud data');
-                this.showNotification('No data found in cloud storage');
-            }
-        });
-    }
-    
-    // Initialize Chrome sync
-    initChromeSync() {
-        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
-            console.log('Chrome sync not available');
-            this.updateSyncInfo('Sync: Not available');
-            return;
-        }
-
-        // Check sync status and load data
-        chrome.storage.sync.get(['tabNowData'], (result) => {
-            if (chrome.runtime.lastError) {
-                console.error('Chrome sync load error:', chrome.runtime.lastError);
-                this.updateSyncStatus('error');
-                this.updateSyncInfo('Sync: Error - ' + chrome.runtime.lastError.message);
-                return;
-            }
-
-            if (result.tabNowData && Object.keys(result.tabNowData).length > 0) {
-                // Check if cloud data exists
-                const cloudNotes = result.tabNowData.tabNowNotes || '';
-                const localNotes = localStorage.getItem('tabNowNotes') || '';
-
-                // Auto-restore only if local is completely empty
-                if (cloudNotes && !localNotes) {
-                    console.log('Restoring data from Chrome sync...');
-                    Object.keys(result.tabNowData).forEach(key => {
-                        localStorage.setItem(key, result.tabNowData[key]);
-                    });
-                    this.loadSavedData();
-                    this.showNotification('Data restored from Chrome sync!');
-                }
-
-                this.updateSyncStatus('synced');
-                this.updateSyncInfo('Sync: Connected ✓');
-            } else {
-                this.updateSyncInfo('Sync: No cloud data');
-            }
-        });
-
-        // Listen for changes from other devices (real-time sync)
-        chrome.storage.onChanged.addListener((changes, areaName) => {
-            if (areaName === 'sync' && changes.tabNowData) {
-                console.log('Received sync update from another device');
-                this.showNotification('📥 New data available! Click "Pull from Cloud" to update.');
-                this.updateSyncInfo('Sync: Update available!');
-            }
-        });
-    }
-    
-    // Update sync info text
-    updateSyncInfo(text) {
-        if (this.syncInfo) {
-            this.syncInfo.textContent = text;
-        }
-    }
-    
-    // Update sync status indicator
-    updateSyncStatus(status) {
-        if (!this.syncIndicator) return;
-        
-        this.syncIndicator.classList.remove('syncing', 'synced', 'error');
-        
-        switch (status) {
-            case 'syncing':
-                this.syncIndicator.classList.add('syncing');
-                this.syncIndicator.title = 'Syncing...';
-                break;
-            case 'synced':
-                this.syncIndicator.classList.add('synced');
-                this.syncIndicator.title = 'Synced with Chrome';
-                break;
-            case 'error':
-                this.syncIndicator.classList.add('error');
-                this.syncIndicator.title = 'Sync error - click Settings to retry';
-                break;
-            default:
-                this.syncIndicator.title = 'Sync status';
-        }
-    }
-    
     // Show a brief notification
     showNotification(message) {
         // Create notification element
@@ -2750,49 +2497,10 @@ class TabNow {
         }, 3000);
     }
     
-    // Immediate save function for important data changes
+    // Save data (localStorage is automatic, this is for any additional save operations)
     saveDataImmediately() {
-        // Debounce sync to avoid too many writes
-        if (this.syncDebounceTimer) {
-            clearTimeout(this.syncDebounceTimer);
-        }
-        
-        this.syncDebounceTimer = setTimeout(() => {
-            // Save to Chrome storage if available
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-                this.updateSyncStatus('syncing');
-                
-                const tabNowData = {};
-                const keysToSync = [
-                    'tabNowNotes',
-                    'tabNowTodos', 
-                    'tabNowReminders',
-                    'tabNowTheme',
-                    'tabNowSelectedTagColor',
-                    'tabNowTempUnit',
-                    'tabNowLocation',
-                    'tabNowWeatherCache',
-                    'tabNowLocalLocationName',
-                    'tabNowAdditionalClockLocations'
-                ];
-                
-                keysToSync.forEach(key => {
-                    const value = localStorage.getItem(key);
-                    if (value) {
-                        tabNowData[key] = value;
-                    }
-                });
-                
-                chrome.storage.sync.set({ tabNowData }, () => {
-                    if (chrome.runtime.lastError) {
-                        console.error('Sync error:', chrome.runtime.lastError);
-                        this.updateSyncStatus('error');
-                    } else {
-                        this.updateSyncStatus('synced');
-                    }
-                });
-            }
-        }, 1000); // Wait 1 second after last change before syncing
+        // Data is already saved to localStorage by individual save functions
+        // This method exists for compatibility and any future save needs
     }
 
     // Utility Functions

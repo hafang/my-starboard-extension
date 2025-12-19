@@ -2011,45 +2011,6 @@ a:hover {
     gap: 10px;
 }
 
-/* Sync Indicator */
-.sync-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    cursor: default;
-}
-
-.sync-indicator .sync-icon {
-    opacity: 0.5;
-    transition: all 0.3s ease;
-}
-
-.sync-indicator.syncing .sync-icon {
-    opacity: 1;
-    color: #f4c2a1;
-    animation: syncPulse 1s infinite;
-}
-
-.sync-indicator.synced .sync-icon {
-    opacity: 1;
-    color: #7a9471;
-}
-
-.sync-indicator.error .sync-icon {
-    opacity: 1;
-    color: #d4a5a5;
-}
-
-@keyframes syncPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-}
-
 /* Data Menu */
 .data-menu {
     position: relative;
@@ -2152,6 +2113,15 @@ a:hover {
     margin: 6px 0;
 }
 
+.dropdown-header {
+    padding: 8px 16px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .dropdown-info {
     padding: 10px 16px;
     font-size: 11px;
@@ -2159,6 +2129,7 @@ a:hover {
     text-align: center;
     border-top: 1px solid var(--border-color);
     margin-top: 4px;
+    line-height: 1.4;
 }
 
 /* Notification Animation */

@@ -16,19 +16,13 @@
                     <div class="notepad-title-section">
                         <h2>Notes</h2>
                         <div class="header-actions">
-                            <div class="sync-indicator" id="syncIndicator" title="Sync status">
-                                <span class="sync-icon">☁</span>
-                            </div>
                             <div class="data-menu">
                                 <button class="data-menu-btn" id="dataMenuBtn" title="Backup & Sync">⚙</button>
                                 <div class="data-dropdown" id="dataDropdown">
-                                    <button class="dropdown-item" id="exportDataBtn">📤 Export Backup</button>
-                                    <button class="dropdown-item" id="importDataBtn">📥 Import Backup</button>
-                                    <div class="dropdown-divider"></div>
-                                    <button class="dropdown-item" id="forceSyncBtn">☁️ Push to Cloud</button>
-                                    <button class="dropdown-item" id="pullFromCloudBtn">⬇️ Pull from Cloud</button>
-                                    <div class="dropdown-divider"></div>
-                                    <div class="dropdown-info" id="syncInfo">Checking sync...</div>
+                                    <div class="dropdown-header">Backup & Transfer</div>
+                                    <button class="dropdown-item" id="exportDataBtn">📤 Export to File</button>
+                                    <button class="dropdown-item" id="importDataBtn">📥 Import from File</button>
+                                    <div class="dropdown-info">Use Export/Import to transfer data between devices</div>
                                 </div>
                             </div>
                             <input type="file" id="importFileInput" accept=".json" style="display: none;">
