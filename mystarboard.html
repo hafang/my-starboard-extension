@@ -16,6 +16,19 @@
                     <div class="notepad-title-section">
                         <h2>Notes</h2>
                         <div class="header-actions">
+                            <div class="sync-indicator" id="syncIndicator" title="Sync status">
+                                <span class="sync-icon">☁</span>
+                            </div>
+                            <div class="data-menu">
+                                <button class="data-menu-btn" id="dataMenuBtn" title="Backup & Sync">⚙</button>
+                                <div class="data-dropdown" id="dataDropdown">
+                                    <button class="dropdown-item" id="exportDataBtn">📤 Export Data</button>
+                                    <button class="dropdown-item" id="importDataBtn">📥 Import Data</button>
+                                    <div class="dropdown-divider"></div>
+                                    <button class="dropdown-item" id="forceSyncBtn">🔄 Force Sync</button>
+                                </div>
+                            </div>
+                            <input type="file" id="importFileInput" accept=".json" style="display: none;">
                             <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
                                 <img class="theme-icon" src="icons/light-512.png" alt="Toggle theme">
                             </button>

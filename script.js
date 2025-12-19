@@ -72,6 +72,15 @@ class TabNow {
         this.currentLocation = null;
         this.additionalClockLocations = []; // User's additional time zones (max 2 additional)
         
+        // Sync & Data elements
+        this.syncIndicator = document.getElementById('syncIndicator');
+        this.dataMenuBtn = document.getElementById('dataMenuBtn');
+        this.dataDropdown = document.getElementById('dataDropdown');
+        this.exportDataBtn = document.getElementById('exportDataBtn');
+        this.importDataBtn = document.getElementById('importDataBtn');
+        this.importFileInput = document.getElementById('importFileInput');
+        this.forceSyncBtn = document.getElementById('forceSyncBtn');
+        
         this.init();
     }
     
@@ -83,10 +92,14 @@ class TabNow {
         this.setupReminders();
         this.setupWeather();
         this.setupClock();
+        this.setupDataMenu();
         this.loadSavedData();
         
         // Cleanup old reminders on startup
         this.cleanupOldReminders();
+        
+        // Initialize Chrome sync after data is loaded
+        this.initChromeSync();
     }
     
     setupTitle() {
@@ -2295,33 +2308,349 @@ class TabNow {
 
     }
     
-    // Immediate save function for important data changes
-    saveDataImmediately() {
-        // Save to Chrome storage if available
-        if (typeof chrome !== 'undefined' && chrome.storage) {
-            const tabNowData = {};
+    // Data Menu Setup
+    setupDataMenu() {
+        // Toggle dropdown
+        if (this.dataMenuBtn) {
+            this.dataMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.dataDropdown.classList.toggle('show');
+            });
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (this.dataDropdown && !this.dataMenuBtn?.contains(e.target)) {
+                this.dataDropdown.classList.remove('show');
+            }
+        });
+        
+        // Export data
+        if (this.exportDataBtn) {
+            this.exportDataBtn.addEventListener('click', () => {
+                this.exportData();
+                this.dataDropdown.classList.remove('show');
+            });
+        }
+        
+        // Import data
+        if (this.importDataBtn) {
+            this.importDataBtn.addEventListener('click', () => {
+                this.importFileInput.click();
+                this.dataDropdown.classList.remove('show');
+            });
+        }
+        
+        if (this.importFileInput) {
+            this.importFileInput.addEventListener('change', (e) => {
+                this.importData(e.target.files[0]);
+                e.target.value = ''; // Reset for future imports
+            });
+        }
+        
+        // Force sync
+        if (this.forceSyncBtn) {
+            this.forceSyncBtn.addEventListener('click', () => {
+                this.forceSync();
+                this.dataDropdown.classList.remove('show');
+            });
+        }
+    }
+    
+    // Export all data as JSON file
+    exportData() {
+        const data = {
+            version: '0.3.0',
+            exportDate: new Date().toISOString(),
+            notes: localStorage.getItem('tabNowNotes') || '',
+            todos: JSON.parse(localStorage.getItem('tabNowTodos') || '[]'),
+            reminders: JSON.parse(localStorage.getItem('tabNowReminders') || '[]'),
+            preferences: {
+                theme: localStorage.getItem('tabNowTheme'),
+                selectedTagColor: localStorage.getItem('tabNowSelectedTagColor'),
+                tempUnit: localStorage.getItem('tabNowTempUnit'),
+                location: localStorage.getItem('tabNowLocation'),
+                localLocationName: localStorage.getItem('tabNowLocalLocationName'),
+                additionalClockLocations: localStorage.getItem('tabNowAdditionalClockLocations')
+            }
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `my-starboard-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('Data exported successfully!');
+    }
+    
+    // Import data from JSON file
+    importData(file) {
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                // Validate it's a valid backup
+                if (!data.version || !data.exportDate) {
+                    throw new Error('Invalid backup file format');
+                }
+                
+                // Confirm with user
+                if (!confirm(`Import backup from ${new Date(data.exportDate).toLocaleDateString()}?\n\nThis will replace all your current data.`)) {
+                    return;
+                }
+                
+                // Restore data
+                if (data.notes !== undefined) {
+                    localStorage.setItem('tabNowNotes', data.notes);
+                    this.notepadEditor.innerHTML = data.notes;
+                }
+                
+                if (data.todos) {
+                    localStorage.setItem('tabNowTodos', JSON.stringify(data.todos));
+                    this.todos = data.todos;
+                    this.renderTodos();
+                }
+                
+                if (data.reminders) {
+                    localStorage.setItem('tabNowReminders', JSON.stringify(data.reminders));
+                    this.reminders = data.reminders;
+                    this.renderReminders();
+                }
+                
+                if (data.preferences) {
+                    if (data.preferences.theme) {
+                        localStorage.setItem('tabNowTheme', data.preferences.theme);
+                        this.setTheme(data.preferences.theme);
+                    }
+                    if (data.preferences.selectedTagColor) {
+                        localStorage.setItem('tabNowSelectedTagColor', data.preferences.selectedTagColor);
+                        this.selectedTagColor = data.preferences.selectedTagColor;
+                    }
+                    if (data.preferences.tempUnit) {
+                        localStorage.setItem('tabNowTempUnit', data.preferences.tempUnit);
+                        this.temperatureUnit = data.preferences.tempUnit;
+                    }
+                    if (data.preferences.location) {
+                        localStorage.setItem('tabNowLocation', data.preferences.location);
+                    }
+                    if (data.preferences.localLocationName) {
+                        localStorage.setItem('tabNowLocalLocationName', data.preferences.localLocationName);
+                    }
+                    if (data.preferences.additionalClockLocations) {
+                        localStorage.setItem('tabNowAdditionalClockLocations', data.preferences.additionalClockLocations);
+                        try {
+                            this.additionalClockLocations = JSON.parse(data.preferences.additionalClockLocations);
+                            this.renderAdditionalLocations();
+                        } catch (e) {}
+                    }
+                }
+                
+                // Sync to Chrome storage
+                this.saveDataImmediately();
+                
+                this.showNotification('Data imported successfully!');
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Failed to import data. Please check the file format.');
+            }
+        };
+        reader.readAsText(file);
+    }
+    
+    // Force sync to Chrome storage
+    forceSync() {
+        this.updateSyncStatus('syncing');
+        this.saveDataImmediately();
+        
+        // Also trigger immediate Chrome sync
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
             const keysToSync = [
-                'tabNowNotes',
-                'tabNowTodos', 
-                'tabNowReminders',
-                'tabNowTheme',
-                'tabNowSelectedTagColor',
-                'tabNowTempUnit',
-                'tabNowLocation',
-                'tabNowWeatherCache',
-                'tabNowLocalLocationName',
-                'tabNowAdditionalClockLocations'
+                'tabNowNotes', 'tabNowTodos', 'tabNowReminders', 'tabNowTheme',
+                'tabNowSelectedTagColor', 'tabNowTempUnit', 'tabNowLocation',
+                'tabNowWeatherCache', 'tabNowLocalLocationName', 'tabNowAdditionalClockLocations'
             ];
             
+            const tabNowData = {};
             keysToSync.forEach(key => {
                 const value = localStorage.getItem(key);
-                if (value) {
-                    tabNowData[key] = value;
-                }
+                if (value) tabNowData[key] = value;
             });
             
-            chrome.storage.sync.set({ tabNowData });
+            chrome.storage.sync.set({ tabNowData }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error('Sync error:', chrome.runtime.lastError);
+                    this.updateSyncStatus('error');
+                    this.showNotification('Sync failed. Check Chrome sync settings.');
+                } else {
+                    this.updateSyncStatus('synced');
+                    this.showNotification('Data synced to Chrome!');
+                }
+            });
+        } else {
+            setTimeout(() => {
+                this.updateSyncStatus('synced');
+                this.showNotification('Data saved locally (Chrome sync not available)');
+            }, 500);
         }
+    }
+    
+    // Initialize Chrome sync
+    initChromeSync() {
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+            console.log('Chrome sync not available');
+            return;
+        }
+        
+        // Load data from Chrome sync storage
+        chrome.storage.sync.get(['tabNowData'], (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('Chrome sync load error:', chrome.runtime.lastError);
+                this.updateSyncStatus('error');
+                return;
+            }
+            
+            if (result.tabNowData) {
+                // Check if cloud data is newer (has more content)
+                const cloudNotes = result.tabNowData.tabNowNotes || '';
+                const localNotes = localStorage.getItem('tabNowNotes') || '';
+                
+                // If cloud has data and local is empty, or cloud is significantly different
+                if (cloudNotes && !localNotes) {
+                    console.log('Restoring data from Chrome sync...');
+                    Object.keys(result.tabNowData).forEach(key => {
+                        localStorage.setItem(key, result.tabNowData[key]);
+                    });
+                    this.loadSavedData();
+                    this.showNotification('Data restored from Chrome sync!');
+                }
+                
+                this.updateSyncStatus('synced');
+            }
+        });
+        
+        // Listen for changes from other devices
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName === 'sync' && changes.tabNowData) {
+                console.log('Received sync update from another device');
+                const newData = changes.tabNowData.newValue;
+                if (newData) {
+                    Object.keys(newData).forEach(key => {
+                        localStorage.setItem(key, newData[key]);
+                    });
+                    this.loadSavedData();
+                    this.updateSyncStatus('synced');
+                    this.showNotification('Data synced from another device!');
+                }
+            }
+        });
+    }
+    
+    // Update sync status indicator
+    updateSyncStatus(status) {
+        if (!this.syncIndicator) return;
+        
+        this.syncIndicator.classList.remove('syncing', 'synced', 'error');
+        
+        switch (status) {
+            case 'syncing':
+                this.syncIndicator.classList.add('syncing');
+                this.syncIndicator.title = 'Syncing...';
+                break;
+            case 'synced':
+                this.syncIndicator.classList.add('synced');
+                this.syncIndicator.title = 'Synced with Chrome';
+                break;
+            case 'error':
+                this.syncIndicator.classList.add('error');
+                this.syncIndicator.title = 'Sync error - click Settings to retry';
+                break;
+            default:
+                this.syncIndicator.title = 'Sync status';
+        }
+    }
+    
+    // Show a brief notification
+    showNotification(message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'sync-notification';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            font-size: 14px;
+            animation: slideUp 0.3s ease;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+    
+    // Immediate save function for important data changes
+    saveDataImmediately() {
+        // Debounce sync to avoid too many writes
+        if (this.syncDebounceTimer) {
+            clearTimeout(this.syncDebounceTimer);
+        }
+        
+        this.syncDebounceTimer = setTimeout(() => {
+            // Save to Chrome storage if available
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+                this.updateSyncStatus('syncing');
+                
+                const tabNowData = {};
+                const keysToSync = [
+                    'tabNowNotes',
+                    'tabNowTodos', 
+                    'tabNowReminders',
+                    'tabNowTheme',
+                    'tabNowSelectedTagColor',
+                    'tabNowTempUnit',
+                    'tabNowLocation',
+                    'tabNowWeatherCache',
+                    'tabNowLocalLocationName',
+                    'tabNowAdditionalClockLocations'
+                ];
+                
+                keysToSync.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        tabNowData[key] = value;
+                    }
+                });
+                
+                chrome.storage.sync.set({ tabNowData }, () => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Sync error:', chrome.runtime.lastError);
+                        this.updateSyncStatus('error');
+                    } else {
+                        this.updateSyncStatus('synced');
+                    }
+                });
+            }
+        }, 1000); // Wait 1 second after last change before syncing
     }
 
     // Utility Functions
@@ -2337,72 +2666,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.tabNowInstance = new TabNow();
 });
 
-// Handle browser extension specific features
-if (typeof chrome !== 'undefined' && chrome.storage) {
-    // Chrome extension storage sync
-    chrome.storage.sync.get(['tabNowData'], (result) => {
-        if (result.tabNowData) {
-            // Restore data from chrome storage
-            Object.keys(result.tabNowData).forEach(key => {
-                localStorage.setItem(key, result.tabNowData[key]);
-            });
-            
-            // Reload the instance to apply the restored data
-            if (window.tabNowInstance) {
-                window.tabNowInstance.loadSavedData();
-            }
-        }
-    });
-    
-    // Save all user data to chrome storage periodically
-    setInterval(() => {
-        const tabNowData = {};
-        const keysToSync = [
-            'tabNowNotes',
-            'tabNowTodos', 
-            'tabNowReminders',
-            'tabNowTheme',
-            'tabNowSelectedTagColor',
-            'tabNowTempUnit',
-            'tabNowLocation',
-            'tabNowWeatherCache',
-            'tabNowLocalLocationName',
-            'tabNowAdditionalClockLocations'
-        ];
-        
-        keysToSync.forEach(key => {
-            const value = localStorage.getItem(key);
-            if (value) {
-                tabNowData[key] = value;
-            }
-        });
-        
-        chrome.storage.sync.set({ tabNowData });
-    }, 5000);
-    
-    // Also save immediately when the page is being unloaded
-    window.addEventListener('beforeunload', () => {
-        const tabNowData = {};
-        const keysToSync = [
-            'tabNowNotes',
-            'tabNowTodos', 
-            'tabNowReminders',
-            'tabNowTheme',
-            'tabNowSelectedTagColor',
-            'tabNowTempUnit',
-            'tabNowLocation',
-            'tabNowWeatherCache',
-            'tabNowLocalLocationName',
-            'tabNowAdditionalClockLocations'
-        ];
-        
-        keysToSync.forEach(key => {
-            const value = localStorage.getItem(key);
-            if (value) {
-                tabNowData[key] = value;
-            }
-        });
-        
-        chrome.storage.sync.set({ tabNowData });
-    });
-} 
+// Save data before page unload
+window.addEventListener('beforeunload', () => {
+    if (window.tabNowInstance) {
+        window.tabNowInstance.saveDataImmediately();
+    }
+}); 

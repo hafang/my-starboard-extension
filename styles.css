@@ -2009,4 +2009,137 @@ a:hover {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* Sync Indicator */
+.sync-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.sync-indicator .sync-icon {
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.sync-indicator.syncing .sync-icon {
+    opacity: 1;
+    color: #f4c2a1;
+    animation: syncPulse 1s infinite;
+}
+
+.sync-indicator.synced .sync-icon {
+    opacity: 1;
+    color: #7a9471;
+}
+
+.sync-indicator.error .sync-icon {
+    opacity: 1;
+    color: #d4a5a5;
+}
+
+@keyframes syncPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Data Menu */
+.data-menu {
+    position: relative;
+}
+
+.data-menu-btn {
+    background: var(--button-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.data-menu-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--accent-color);
+}
+
+.data-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    min-width: 160px;
+    padding: 8px 0;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+}
+
+.data-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.data-dropdown .dropdown-item {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.data-dropdown .dropdown-item:hover {
+    background: var(--hover-color);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 6px 0;
+}
+
+/* Notification Animation */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
 } 
