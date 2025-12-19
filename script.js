@@ -2569,11 +2569,28 @@ class TabNow {
                 }
                 
                 // Restore all data from cloud
-                console.log('Restoring keys:', Object.keys(result.tabNowData));
-                Object.keys(result.tabNowData).forEach(key => {
-                    console.log(`Setting ${key}:`, result.tabNowData[key]?.substring?.(0, 100) || result.tabNowData[key]);
-                    localStorage.setItem(key, result.tabNowData[key]);
-                });
+                console.log('=== STARTING DATA RESTORE ===');
+                console.log('Full result.tabNowData:', JSON.stringify(result.tabNowData));
+                console.log('Keys to restore:', Object.keys(result.tabNowData));
+                
+                // Save each key individually with verification
+                const keys = Object.keys(result.tabNowData);
+                for (let i = 0; i < keys.length; i++) {
+                    const key = keys[i];
+                    const value = result.tabNowData[key];
+                    console.log(`[${i}] Key: ${key}, Value type: ${typeof value}, Value preview:`, 
+                        typeof value === 'string' ? value.substring(0, 80) : value);
+                    
+                    if (value !== undefined && value !== null) {
+                        localStorage.setItem(key, value);
+                        const verify = localStorage.getItem(key);
+                        console.log(`[${i}] Verified ${key} saved:`, verify ? 'YES' : 'NO');
+                    } else {
+                        console.log(`[${i}] SKIPPING ${key} - value is null/undefined`);
+                    }
+                }
+                
+                console.log('=== RESTORE COMPLETE ===');
                 
                 // Verify data was saved
                 console.log('Verifying localStorage after save:', {
