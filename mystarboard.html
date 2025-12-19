@@ -22,10 +22,13 @@
                             <div class="data-menu">
                                 <button class="data-menu-btn" id="dataMenuBtn" title="Backup & Sync">⚙</button>
                                 <div class="data-dropdown" id="dataDropdown">
-                                    <button class="dropdown-item" id="exportDataBtn">📤 Export Data</button>
-                                    <button class="dropdown-item" id="importDataBtn">📥 Import Data</button>
+                                    <button class="dropdown-item" id="exportDataBtn">📤 Export Backup</button>
+                                    <button class="dropdown-item" id="importDataBtn">📥 Import Backup</button>
                                     <div class="dropdown-divider"></div>
-                                    <button class="dropdown-item" id="forceSyncBtn">🔄 Force Sync</button>
+                                    <button class="dropdown-item" id="forceSyncBtn">☁️ Push to Cloud</button>
+                                    <button class="dropdown-item" id="pullFromCloudBtn">⬇️ Pull from Cloud</button>
+                                    <div class="dropdown-divider"></div>
+                                    <div class="dropdown-info" id="syncInfo">Checking sync...</div>
                                 </div>
                             </div>
                             <input type="file" id="importFileInput" accept=".json" style="display: none;">

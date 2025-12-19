@@ -80,7 +80,9 @@ class TabNow {
         this.importDataBtn = document.getElementById('importDataBtn');
         this.importFileInput = document.getElementById('importFileInput');
         this.forceSyncBtn = document.getElementById('forceSyncBtn');
-        
+        this.pullFromCloudBtn = document.getElementById('pullFromCloudBtn');
+        this.syncInfo = document.getElementById('syncInfo');
+
         this.init();
     }
     
@@ -2348,10 +2350,18 @@ class TabNow {
             });
         }
         
-        // Force sync
+        // Force sync (push)
         if (this.forceSyncBtn) {
             this.forceSyncBtn.addEventListener('click', () => {
                 this.forceSync();
+                this.dataDropdown.classList.remove('show');
+            });
+        }
+        
+        // Pull from cloud
+        if (this.pullFromCloudBtn) {
+            this.pullFromCloudBtn.addEventListener('click', () => {
+                this.pullFromCloud();
                 this.dataDropdown.classList.remove('show');
             });
         }
@@ -2465,64 +2475,110 @@ class TabNow {
         reader.readAsText(file);
     }
     
-    // Force sync to Chrome storage
+    // Force sync to Chrome storage (Push)
     forceSync() {
         this.updateSyncStatus('syncing');
-        this.saveDataImmediately();
-        
-        // Also trigger immediate Chrome sync
+
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
             const keysToSync = [
                 'tabNowNotes', 'tabNowTodos', 'tabNowReminders', 'tabNowTheme',
                 'tabNowSelectedTagColor', 'tabNowTempUnit', 'tabNowLocation',
                 'tabNowWeatherCache', 'tabNowLocalLocationName', 'tabNowAdditionalClockLocations'
             ];
-            
+
             const tabNowData = {};
             keysToSync.forEach(key => {
                 const value = localStorage.getItem(key);
                 if (value) tabNowData[key] = value;
             });
-            
+
             chrome.storage.sync.set({ tabNowData }, () => {
                 if (chrome.runtime.lastError) {
                     console.error('Sync error:', chrome.runtime.lastError);
                     this.updateSyncStatus('error');
-                    this.showNotification('Sync failed. Check Chrome sync settings.');
+                    this.showNotification('Sync failed: ' + chrome.runtime.lastError.message);
                 } else {
                     this.updateSyncStatus('synced');
-                    this.showNotification('Data synced to Chrome!');
+                    this.updateSyncInfo('Sync: Connected ✓');
+                    this.showNotification('✅ Data pushed to Chrome cloud!');
                 }
             });
         } else {
-            setTimeout(() => {
-                this.updateSyncStatus('synced');
-                this.showNotification('Data saved locally (Chrome sync not available)');
-            }, 500);
+            this.updateSyncStatus('error');
+            this.showNotification('Chrome sync not available');
         }
+    }
+    
+    // Pull data from Chrome cloud storage
+    pullFromCloud() {
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+            this.showNotification('Chrome sync not available');
+            return;
+        }
+        
+        this.updateSyncStatus('syncing');
+        
+        chrome.storage.sync.get(['tabNowData'], (result) => {
+            if (chrome.runtime.lastError) {
+                console.error('Pull error:', chrome.runtime.lastError);
+                this.updateSyncStatus('error');
+                this.updateSyncInfo('Sync: Pull failed');
+                this.showNotification('Pull failed: ' + chrome.runtime.lastError.message);
+                return;
+            }
+            
+            if (result.tabNowData && Object.keys(result.tabNowData).length > 0) {
+                // Confirm before overwriting
+                const cloudNotes = result.tabNowData.tabNowNotes || '';
+                const cloudTodos = result.tabNowData.tabNowTodos || '[]';
+                const todoCount = JSON.parse(cloudTodos).length;
+                
+                if (!confirm(`Pull data from cloud?\n\nCloud has: ${cloudNotes.length} chars of notes, ${todoCount} todos\n\nThis will replace your current data.`)) {
+                    this.updateSyncStatus('synced');
+                    this.updateSyncInfo('Sync: Connected ✓');
+                    return;
+                }
+                
+                // Restore all data from cloud
+                Object.keys(result.tabNowData).forEach(key => {
+                    localStorage.setItem(key, result.tabNowData[key]);
+                });
+                
+                this.loadSavedData();
+                this.updateSyncStatus('synced');
+                this.updateSyncInfo('Sync: Connected ✓');
+                this.showNotification('✅ Data pulled from cloud!');
+            } else {
+                this.updateSyncStatus('synced');
+                this.updateSyncInfo('Sync: No cloud data');
+                this.showNotification('No data found in cloud storage');
+            }
+        });
     }
     
     // Initialize Chrome sync
     initChromeSync() {
         if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
             console.log('Chrome sync not available');
+            this.updateSyncInfo('Sync: Not available');
             return;
         }
-        
-        // Load data from Chrome sync storage
+
+        // Check sync status and load data
         chrome.storage.sync.get(['tabNowData'], (result) => {
             if (chrome.runtime.lastError) {
                 console.error('Chrome sync load error:', chrome.runtime.lastError);
                 this.updateSyncStatus('error');
+                this.updateSyncInfo('Sync: Error - ' + chrome.runtime.lastError.message);
                 return;
             }
-            
-            if (result.tabNowData) {
-                // Check if cloud data is newer (has more content)
+
+            if (result.tabNowData && Object.keys(result.tabNowData).length > 0) {
+                // Check if cloud data exists
                 const cloudNotes = result.tabNowData.tabNowNotes || '';
                 const localNotes = localStorage.getItem('tabNowNotes') || '';
-                
-                // If cloud has data and local is empty, or cloud is significantly different
+
+                // Auto-restore only if local is completely empty
                 if (cloudNotes && !localNotes) {
                     console.log('Restoring data from Chrome sync...');
                     Object.keys(result.tabNowData).forEach(key => {
@@ -2531,26 +2587,29 @@ class TabNow {
                     this.loadSavedData();
                     this.showNotification('Data restored from Chrome sync!');
                 }
-                
+
                 this.updateSyncStatus('synced');
+                this.updateSyncInfo('Sync: Connected ✓');
+            } else {
+                this.updateSyncInfo('Sync: No cloud data');
             }
         });
-        
-        // Listen for changes from other devices
+
+        // Listen for changes from other devices (real-time sync)
         chrome.storage.onChanged.addListener((changes, areaName) => {
             if (areaName === 'sync' && changes.tabNowData) {
                 console.log('Received sync update from another device');
-                const newData = changes.tabNowData.newValue;
-                if (newData) {
-                    Object.keys(newData).forEach(key => {
-                        localStorage.setItem(key, newData[key]);
-                    });
-                    this.loadSavedData();
-                    this.updateSyncStatus('synced');
-                    this.showNotification('Data synced from another device!');
-                }
+                this.showNotification('📥 New data available! Click "Pull from Cloud" to update.');
+                this.updateSyncInfo('Sync: Update available!');
             }
         });
+    }
+    
+    // Update sync info text
+    updateSyncInfo(text) {
+        if (this.syncInfo) {
+            this.syncInfo.textContent = text;
+        }
     }
     
     // Update sync status indicator
