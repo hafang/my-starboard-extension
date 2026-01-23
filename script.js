@@ -251,6 +251,133 @@ class TabNow {
                 }
             }
             
+            // Handle Enter key in checklist items
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    let element = range.startContainer;
+                    if (element.nodeType === Node.TEXT_NODE) element = element.parentElement;
+                    const checklistItem = element.closest('.checklist-item');
+                    
+                    if (checklistItem) {
+                        e.preventDefault();
+                        const textSpan = checklistItem.querySelector('.checklist-text');
+                        const currentText = textSpan?.textContent || '';
+                        
+                        // If empty, remove checklist formatting and exit checklist mode
+                        if (!currentText.trim()) {
+                            const br = document.createElement('br');
+                            checklistItem.parentNode.insertBefore(br, checklistItem.nextSibling);
+                            checklistItem.parentNode.removeChild(checklistItem);
+                            
+                            // Place cursor after the <br>
+                            const newRange = document.createRange();
+                            newRange.setStartAfter(br);
+                            newRange.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(newRange);
+                        } else {
+                            // Create new checklist item
+                            const newChecklistItem = document.createElement('div');
+                            newChecklistItem.className = 'checklist-item';
+                            newChecklistItem.innerHTML = `<span class="checklist-checkbox" contenteditable="false"></span><span class="checklist-text"><br></span>`;
+                            
+                            // Insert after current checklist item
+                            checklistItem.parentNode.insertBefore(newChecklistItem, checklistItem.nextSibling);
+                            
+                            // Move cursor to new item's text span
+                            const newTextSpan = newChecklistItem.querySelector('.checklist-text');
+                            const newRange = document.createRange();
+                            newRange.selectNodeContents(newTextSpan);
+                            newRange.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(newRange);
+                        }
+                        
+                        this.saveNotepadContent();
+                        return;
+                    }
+                }
+            }
+            
+            // Handle Backspace at start of checklist item
+            if (e.key === 'Backspace') {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    let element = range.startContainer;
+                    const originalElement = element;
+                    if (element.nodeType === Node.TEXT_NODE) element = element.parentElement;
+                    const checklistItem = element.closest('.checklist-item');
+                    
+                    if (checklistItem) {
+                        const textSpan = checklistItem.querySelector('.checklist-text');
+                        const currentText = textSpan?.textContent || '';
+                        const isTextEmpty = !currentText.trim();
+                        
+                        // Check if cursor is at the beginning of the text span
+                        let isAtStart = false;
+                        if (range.collapsed) {
+                            if (originalElement.nodeType === Node.TEXT_NODE) {
+                                // If in a text node, check if we're at offset 0 and it's the first text node
+                                const textContent = textSpan?.textContent || '';
+                                const textBefore = this.getTextBeforeCursor(textSpan, range);
+                                isAtStart = textBefore.length === 0;
+                            } else {
+                                // If not in a text node (e.g., clicking in empty span), we're at start
+                                isAtStart = range.startOffset === 0 || isTextEmpty;
+                            }
+                        }
+                        
+                        if (isAtStart || isTextEmpty) {
+                            e.preventDefault();
+                            
+                            // Convert checklist item to plain text
+                            const text = currentText || '';
+                            if (text && !isTextEmpty) {
+                                const textNode = document.createTextNode(text);
+                                checklistItem.parentNode.insertBefore(textNode, checklistItem);
+                                checklistItem.parentNode.removeChild(checklistItem);
+                                
+                                // Place cursor at the start of the text
+                                const newRange = document.createRange();
+                                newRange.setStart(textNode, 0);
+                                newRange.collapse(true);
+                                selection.removeAllRanges();
+                                selection.addRange(newRange);
+                            } else {
+                                // Just remove the empty checklist item
+                                const prevSibling = checklistItem.previousSibling;
+                                checklistItem.parentNode.removeChild(checklistItem);
+                                
+                                // Try to place cursor in previous element
+                                if (prevSibling) {
+                                    const newRange = document.createRange();
+                                    if (prevSibling.nodeType === Node.TEXT_NODE) {
+                                        newRange.setStart(prevSibling, prevSibling.length);
+                                    } else if (prevSibling.classList?.contains('checklist-item')) {
+                                        const prevTextSpan = prevSibling.querySelector('.checklist-text');
+                                        if (prevTextSpan) {
+                                            newRange.selectNodeContents(prevTextSpan);
+                                            newRange.collapse(false);
+                                        }
+                                    } else {
+                                        newRange.setStartAfter(prevSibling);
+                                    }
+                                    newRange.collapse(true);
+                                    selection.removeAllRanges();
+                                    selection.addRange(newRange);
+                                }
+                            }
+                            
+                            this.saveNotepadContent();
+                            return;
+                        }
+                    }
+                }
+            }
+            
             // Keyboard shortcuts for formatting
             if (e.ctrlKey || e.metaKey) {
                 switch(e.key.toLowerCase()) {
@@ -1639,11 +1766,14 @@ class TabNow {
 
     async fetchRealWeatherData(lat, lon) {
         try {
-            // Using wttr.in API - a free weather API that doesn't require API key
+            // Using Open-Meteo API - free, accurate, and no API key required
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // Increased to 10 seconds
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
             
-            const response = await fetch(`https://wttr.in/${lat},${lon}?format=j1`, {
+            // Open-Meteo API with current weather and daily forecast
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto`;
+            
+            const response = await fetch(url, {
                 signal: controller.signal
             });
             
@@ -1655,32 +1785,83 @@ class TabNow {
             
             const data = await response.json();
             
-            if (data && data.current_condition && data.current_condition[0] && data.weather && data.weather[0]) {
-                const current = data.current_condition[0];
-                const today = data.weather[0];
+            if (data && data.current && data.daily) {
+                const current = data.current;
+                const daily = data.daily;
+                
+                // Convert Celsius to Fahrenheit
+                const tempC = Math.round(current.temperature_2m);
+                const tempF = Math.round((tempC * 9/5) + 32);
+                const highTempC = Math.round(daily.temperature_2m_max[0]);
+                const highTempF = Math.round((highTempC * 9/5) + 32);
+                const lowTempC = Math.round(daily.temperature_2m_min[0]);
+                const lowTempF = Math.round((lowTempC * 9/5) + 32);
+                
+                // Convert wind speed from km/h to mph
+                const windSpeedKmh = Math.round(current.wind_speed_10m);
+                const windSpeedMph = Math.round(windSpeedKmh * 0.621371);
+                
+                // Map WMO weather codes to descriptions
+                const description = this.getWeatherDescription(current.weather_code);
                 
                 return {
-                    currentTempF: parseInt(current.temp_F),
-                    currentTempC: parseInt(current.temp_C),
-                    highTempF: parseInt(today.maxtempF),
-                    highTempC: parseInt(today.maxtempC),
-                    lowTempF: parseInt(today.mintempF),
-                    lowTempC: parseInt(today.mintempC),
-                    temperatureF: parseInt(current.temp_F),
-                    temperatureC: parseInt(current.temp_C),
-                    description: current.weatherDesc?.[0]?.value || 'Clear',
-                    humidity: parseInt(current.humidity) || 50,
-                    windSpeedMph: parseInt(current.windspeedMiles) || 0,
-                    windSpeedKmh: parseInt(current.windspeedKmph) || 0,
-                    location: data.nearest_area?.[0]?.areaName?.[0]?.value || 'Your Location',
+                    currentTempF: tempF,
+                    currentTempC: tempC,
+                    highTempF: highTempF,
+                    highTempC: highTempC,
+                    lowTempF: lowTempF,
+                    lowTempC: lowTempC,
+                    temperatureF: tempF,
+                    temperatureC: tempC,
+                    description: description,
+                    humidity: Math.round(current.relative_humidity_2m) || 50,
+                    windSpeedMph: windSpeedMph,
+                    windSpeedKmh: windSpeedKmh,
+                    location: 'Your Location',
                     isRealData: true
                 };
             }
         } catch (error) {
+            console.warn('Open-Meteo API failed:', error.message);
             return null;
         }
         
         return null;
+    }
+    
+    // Map WMO weather codes to human-readable descriptions
+    getWeatherDescription(code) {
+        const weatherCodes = {
+            0: 'Clear sky',
+            1: 'Mainly clear',
+            2: 'Partly cloudy',
+            3: 'Overcast',
+            45: 'Foggy',
+            48: 'Depositing rime fog',
+            51: 'Light drizzle',
+            53: 'Moderate drizzle',
+            55: 'Dense drizzle',
+            56: 'Light freezing drizzle',
+            57: 'Dense freezing drizzle',
+            61: 'Slight rain',
+            63: 'Moderate rain',
+            65: 'Heavy rain',
+            66: 'Light freezing rain',
+            67: 'Heavy freezing rain',
+            71: 'Slight snow',
+            73: 'Moderate snow',
+            75: 'Heavy snow',
+            77: 'Snow grains',
+            80: 'Slight rain showers',
+            81: 'Moderate rain showers',
+            82: 'Violent rain showers',
+            85: 'Slight snow showers',
+            86: 'Heavy snow showers',
+            95: 'Thunderstorm',
+            96: 'Thunderstorm with slight hail',
+            99: 'Thunderstorm with heavy hail'
+        };
+        return weatherCodes[code] || 'Clear';
     }
 
     generateLocationBasedWeather(lat, lon, locationName) {
@@ -1875,20 +2056,28 @@ class TabNow {
     getWeatherIcon(description) {
         const desc = description.toLowerCase();
         
-        if (desc.includes('clear') || desc.includes('sunny')) {
-            return '☀️';
-        } else if (desc.includes('partly') || desc.includes('partial')) {
-            return '⛅';
-        } else if (desc.includes('cloudy') || desc.includes('overcast')) {
-            return '☁️';
-        } else if (desc.includes('rain') || desc.includes('drizzle')) {
-            return '🌧️';
-        } else if (desc.includes('storm') || desc.includes('thunder')) {
+        if (desc.includes('thunder') || desc.includes('storm')) {
             return '⛈️';
+        } else if (desc.includes('hail')) {
+            return '🌨️';
         } else if (desc.includes('snow') || desc.includes('blizzard')) {
             return '❄️';
-        } else if (desc.includes('fog') || desc.includes('mist')) {
+        } else if (desc.includes('freezing')) {
+            return '🥶';
+        } else if (desc.includes('heavy rain') || desc.includes('violent')) {
+            return '🌧️';
+        } else if (desc.includes('rain') || desc.includes('drizzle') || desc.includes('shower')) {
+            return '🌧️';
+        } else if (desc.includes('fog') || desc.includes('mist') || desc.includes('rime')) {
             return '🌫️';
+        } else if (desc.includes('overcast')) {
+            return '☁️';
+        } else if (desc.includes('partly') || desc.includes('partial') || desc.includes('mainly clear')) {
+            return '⛅';
+        } else if (desc.includes('cloudy')) {
+            return '☁️';
+        } else if (desc.includes('clear') || desc.includes('sunny')) {
+            return '☀️';
         } else if (desc.includes('wind')) {
             return '💨';
         } else {
@@ -2662,6 +2851,17 @@ Common timezone examples:
     }
 
     // Utility Functions
+    
+    // Get text content before the cursor within a container element
+    getTextBeforeCursor(container, range) {
+        if (!container || !range) return '';
+        
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(container);
+        preCaretRange.setEnd(range.startContainer, range.startOffset);
+        return preCaretRange.toString();
+    }
+    
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
